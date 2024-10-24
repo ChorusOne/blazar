@@ -1,0 +1,7 @@
+VERSION_s1=5.3
+# case sensitive - s1 != S2
+VERSION_S1=5.4
+# invalid entry
+VERSIONS1=5.5
+# invalid entry
+version_s2=5.6

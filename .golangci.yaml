@@ -1,0 +1,70 @@
+---
+run:
+  go: '1.22'
+
+linters:
+  enable:
+    - bodyclose
+    - copyloopvar
+    - errcheck
+    - errorlint
+    - gocheckcompilerdirectives
+    - goconst
+    - gocritic
+    - gofmt
+    - goimports
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - intrange
+    - ineffassign
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - revive
+    - staticcheck
+    - stylecheck
+    - testifylint
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+
+issues:
+  exclude-rules:
+    # Related to file sizes.
+    - path: .go
+      linters: [gosec]
+      text: "G114: Use of net/http serve function that has no support for setting timeouts"
+
+    - path: .go
+      linters: [stylecheck]
+      text: "ST1003: should not use underscores in package names"
+
+    - path: .go
+      linters: [stylecheck]
+      text: "ST1003: should not use ALL_CAPS in Go names; use CamelCase instead"
+
+    - path: .go
+      linters: [revive]
+      text: "var-naming: don't use an underscore in package name"
+
+    - path: .go
+      linters: [revive]
+      text: "var-naming: don't use ALL_CAPS in Go names; use CamelCase"
+
+    - path: (.+)_test\.go
+      linters:
+        - bodyclose
+        - gosec
+        - noctx
+
+  exclude:
+    # Not all the chains are on v0.47
+    - "res.Block is deprecated: please use `sdk_block` instead"
+    # Blazar support "older" versions v1 and v1beta
+    - "upgradetypes.SoftwareUpgradeProposal is deprecated: Do not use."
+    # Linter doesn't catch the cobra check after
+    - "Error return value of `registerUpgradeCmd.MarkFlagRequired` is not checked"

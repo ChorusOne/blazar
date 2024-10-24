@@ -1,0 +1,204 @@
+# Absolute path to the docker-compose.yml file running the chain process
+compose-file = "<path>"
+# Docker Compose service name to perform the upgrade on
+compose-service = "<service>"
+
+# Specify where to upgrade the version: in the Compose file or a dedicated .env file
+# Options are "compose-file" and "env-file"
+upgrade-mode = "compose-file"
+
+# [OPTIONAL] version-file is required if upgrade-mode is set to "env-file"
+# Absolute path to version file, containing the image version for docker-compose
+# version-file = "/etc/docker/compose/{{ chain }}-chorus/.env"
+
+# Absolute path to the chain home directory on the host system
+chain-home = "<path>"
+# Info log level (0 for debug, -1 for trace)
+# Refer to https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging for all options
+log-level = 1
+
+# The Blazar server binds to this address
+# The gRPC server provides an endpoint to register new upgrades and list them
+# The HTTP server serves the same endpoints using grpc-gateway and provides metrics
+host = "0.0.0.0"
+http-port = 1234
+grpc-port = 5678
+
+[watchers]
+# Interval to poll for upgrade-info.json
+# Interpreted as Go's time.Duration
+upgrade-info-interval = "300ms"
+# Interval to poll the chain for the last height
+# If set to zero (0), Blazar will use a streaming WebSocket client to get the height for every new block
+# Interpreted as Go's time.Duration
+height-interval = "0s"
+# Interval to poll for upgrade proposals
+# Interpreted as Go's time.Duration
+upgrade-proposals-interval = "10m"
+
+[clients]
+# Host of gRPC and CometBFT service exposed by the chain process
+host = "<host>"
+grpc-port = 9090
+cometbft-port = 25567
+# Timeout value for gRPC method calls
+timeout = "10s"
+
+[compose-cli]
+# Timeout for docker-compose down in seconds
+# This is passed to docker-compose down --timeout <seconds> after rounding to the nearest second
+# A deadline for docker-compose down is set to compose-down-timeout + 5 seconds
+# Minimum 10s
+down-timeout = "1m"
+# Deadline for docker-compose up -f --force-recreate to run in seconds
+# Blazar will consider it a "failed" upgrade if the deadline is reached
+# Minimum 10s
+up-deadline = "1m"
+# Blazar uses environment variables to configure the Cosmos SDK node. For example, to stop the node at X height during
+# the coordinated upgrade, Blazar will set <ENV_PREFIX>_HALT_HEIGHT=X.
+#
+# If empty, Blazar will fetch the env-prefix (e.g., "GAIAD") from the node via an RPC call.
+# Otherwise, the env-prefix will be used as is.
+env-prefix = ""
+
+[checks.pre-upgrade]
+# Blazar runs some pre-upgrade checks automatically when the chain height crosses (upgrade-height - blocks)
+blocks = 200
+# Which checks to enable; all options are listed here
+enabled = ["PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT"]
+
+# [OPTIONAL] Omit this section if you don't want this check
+# Sets up the HALT_HEIGHT env variable that makes the node stop at a certain height.
+# This is used by the NON_GOV_COORDINATED upgrade type
+[checks.pre-upgrade.set-halt-height]
+# Specify how long Blazar should delay the check before the upgrade. For instance, if `blocks = 200` and
+# `delay-blocks=10`, Blazar will execute the check when the chain height is at `upgrade-height - 190`.
+# This is useful if you run multiple nodes and don't want to restart them simultaneously.
+delay-blocks = 0
+
+# Blazar runs a post-upgrade check which involves polling a gRPC and a CometBFT endpoint until both are responsive.
+# Then, as a second post-upgrade check, it polls the height reporting endpoint to check if the chain height is increasing.
+[checks.post-upgrade]
+# Which checks to enable; all options are listed here
+enabled = ["GRPC_RESPONSIVE", "CHAIN_HEIGHT_INCREASED", "FIRST_BLOCK_VOTED"]
+
+# [OPTIONAL] Omit this section if you don't want this check
+# Polls the gRPC endpoint to check if it is responsive
+[checks.post-upgrade.grpc-responsive]
+# This interval denotes the minimum time interval Blazar will ensure between two successive gRPC/CometBFT
+# endpoint calls in this check
+# Interpreted as Go's time.Duration
+poll-interval = "1s"
+# Specify a timeout after which Blazar gives up on polling the gRPC and CometBFT endpoints
+# for responsiveness and treats the upgrade as a failed upgrade.
+# Interpreted as Go's time.Duration
+timeout = "3m"
+
+# [OPTIONAL] Omit this section if you don't want this check
+# After the services are responsive, Blazar checks if the validator's signature is present
+# on the prevote for the first block.
+[checks.post-upgrade.first-block-voted]
+# This interval denotes the minimum time interval Blazar will ensure between two successive gRPC/CometBFT
+# endpoint calls in this check
+# Interpreted as Go's time.Duration
+poll-interval = "1s"
+# If the first block after the upgrade hasn't been signed within the specified interval, Blazar will send you
+# a notification. This can help in figuring out if this node is slow or the upgrade is botched. Don't set this too low,
+# or you may be spammed with notifications.
+# Interpreted as Go's time.Duration
+notif-interval = "1m"
+# Specify a timeout after which Blazar gives up on this check and treats the upgrade as a failed upgrade.
+# Interpreted as Go's time.Duration
+timeout = "5m"
+
+# [OPTIONAL] Omit this section if you don't want this check
+# Polls the chain height reporting endpoint to check if the chain height has increased from the upgrade height
+[checks.post-upgrade.chain-height-increased]
+# This interval denotes the minimum time interval Blazar will ensure between two successive gRPC/CometBFT endpoint calls
+# in this check
+# Interpreted as Go's time.Duration
+poll-interval = "1s"
+# After the services are responsive, Blazar checks if the observed height of the chain increases. If the observed height
+# doesn't increase within the specified interval, Blazar will send you a notification with the current online prevote VP.
+# This can help in figuring out if this node is slow or the upgrade is botched. Don't set this too low,
+# or you may be spammed with notifications.
+# Interpreted as Go's time.Duration
+notif-interval = "1m"
+# Specify a timeout after which Blazar gives up on this check and treats the upgrade as a failed upgrade.
+# Interpreted as Go's time.Duration
+timeout = "5m"
+
+# [OPTIONAL] Omit this section if you don't want Slack notifications
+[slack.webhook-notifier]
+webhook-url = "<url or absolute path of file containing url>"
+
+# [OPTIONAL] Omit this section if you don't want Slack notifications
+# [slack.bot-notifier]
+# auth-token = "<url or absolute path of file containing token>"
+# channel = "<channel>"
+# group-messages = true
+
+# [OPTIONAL] Omit this section if you don't use a Docker credential helper
+[docker-credential-helper]
+# Absolute path to the Docker credential helper script/binary
+# https://docs.docker.com/engine/reference/commandline/login/#credential-helper-protocol
+command = "<path>"
+# Timeout for the credential helper in seconds
+# Interpreted as Go's time.Duration
+timeout = "10s"
+
+[upgrade-registry]
+# List providers to enable here
+# Enabled providers must have a definition under [upgrade-registry.providers.<provider-name>]
+providers = ["chain", "database", "local"]
+
+# This is the name we will use to differentiate upgrades on this network from others in central sources like DB
+network = "<network>"
+
+# [Optional] Omit this section if you don't want to use a database provider
+[upgrade-registry.provider.database]
+# Default priority of an upgrade registered, can be an integer in 1-99.
+# This can be overridden in the UI/gRPC/REST API
+# In case multiple providers provide an upgrade for the same height, the highest priority
+# upgrade will be picked by Blazar
+default-priority = 3
+host = "<db-host>"
+port = 5432
+db = "<db-name>"
+user = "<db-user>"
+password = "<db-password>"
+# This will override the password field
+password-file = "<path-to-file-containing-password>"
+# Can be one of disable, allow, prefer, require, verify-ca, verify-full
+ssl-mode = "disable"
+# Allow GORM to auto-migrate the schema on startup
+auto-migrate = false
+
+# [Optional] Omit this section if you don't want to use a local provider
+[upgrade-registry.provider.local]
+# Path to the JSON file where the upgrades will be stored and read from. If the file doesn't exist, Blazar will error.
+# Create a file with "{}" to start fresh
+config-path = "./local-provider.db.json"
+# Default priority of an upgrade registered, can be an integer in 1-99.
+# This can be overridden in the UI/gRPC/REST API
+# See upgrade-registry.provider.database.priority for more info
+default-priority = 2
+
+# [Optional] Omit this section if you don't want to use a chain provider
+[upgrade-registry.provider.chain]
+# Default priority of an upgrade registered, can be an integer in 1-99.
+# Since the chain provider is effectively a read-only DB, this value is used to determine the priority of the upgrade
+# See upgrade-registry.provider.database.priority for more info
+default-priority = 1
+
+[upgrade-registry.state-machine]
+# Only "local" is supported for now
+# If no value is provided, the state machine is kept in memory, and all state info will be lost across restarts, which
+# might be valuable for debugging
+provider = "local"
+
+# [Optional] Omit this section if you don't want to use a version-resolver
+# If the version tag is missing from the upgrade, it will try to be resolved using the version-resolver
+[upgrade-registry.version-resolvers]
+# Only "database" and "local" are supported for now
+providers = ["local", "database"]

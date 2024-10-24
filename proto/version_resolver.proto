@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+import "upgrades_registry.proto";
+import "google/api/annotations.proto";
+
+option go_package = "internal/pkg/proto/version_resolver";
+
+service VersionResolver {
+    // register a new version tag for a given height and network
+    rpc AddVersion (RegisterVersionRequest) returns (RegisterVersionResponse) {
+      option (google.api.http) = { post: "/v1/versions/add", body: "*" };
+    }
+
+    // retrieve the version tag for a given height and network
+    rpc GetVersion (GetVersionRequest) returns (GetVersionResponse) {
+        option (google.api.http) = { get: "/v1/versions/get" };
+    }
+
+    // list all registered versions
+    rpc ListVersions (ListVersionsRequest) returns (ListVersionsResponse) {
+        option (google.api.http) = { get: "/v1/versions/list" };
+    }
+}
+
+message Version {
+   // upgrade height the version tag is valid for
+   // @gotags: gorm:"primaryKey;not null"
+   int64 height= 1;
+
+   // chain network name
+   // @gotags: gorm:"primaryKey;type:text;not null"
+   string network = 2;
+
+   // version tag
+   string tag = 3;
+
+   // source of the upgrade
+   // @gotags: gorm:"not null"
+   ProviderType source = 4;
+
+   // the version priority
+   // @gotags: gorm:"primaryKey"
+   int32 priority = 5;
+}
+
+message RegisterVersionRequest {
+    Version version = 1;
+    bool overwrite = 2;
+}
+
+message RegisterVersionResponse{}
+
+message GetVersionRequest {
+   bool disable_cache = 1;
+   int64 height = 2;
+}
+
+message GetVersionResponse {
+   optional Version version = 1;
+}
+
+message ListVersionsRequest {
+    bool disable_cache = 1;
+    optional int64 height = 2;
+    optional ProviderType source = 3;
+}
+
+message ListVersionsResponse {
+   repeated Version versions = 1;
+}

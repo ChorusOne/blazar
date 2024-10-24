@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  s1:
+    image: "testrepo/env-echo:latest"
+    ports:
+      - "127.0.0.1:4444:8080"
+    environment:
+      - HALT_HEIGHT=${HALT_HEIGHT}

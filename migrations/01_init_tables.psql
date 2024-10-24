@@ -1,0 +1,24 @@
+CREATE TABLE "upgrades"
+  (
+     "height"      BIGINT NOT NULL,
+     "tag"         TEXT NOT NULL,
+     "network"     TEXT NOT NULL,
+     "name"        TEXT NOT NULL,
+     "type"        INTEGER NOT NULL,
+     "status"      INTEGER NOT NULL DEFAULT 0,
+     "step"        INTEGER NOT NULL DEFAULT 0,
+     "priority"    INTEGER,
+     "source"      INTEGER NOT NULL,
+     "proposal_id" BIGINT,
+     PRIMARY KEY ("height", "network", "priority")
+  )
+
+CREATE TABLE "versions"
+  (
+     "height"   BIGINT NOT NULL,
+     "network"  TEXT NOT NULL,
+     "tag"      TEXT,
+     "source"   INTEGER NOT NULL,
+     "priority" INTEGER,
+     PRIMARY KEY ("height", "network", "priority")
+  )

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+option go_package = "internal/pkg/proto/daemon";
+
+enum PreCheck { 
+    // Try to fetch the docker image before upgrade 
+    PULL_DOCKER_IMAGE = 0;
+    // Set the node's halt-height before non-governance coordinated upgrades
+    SET_HALT_HEIGHT = 1;
+}
+
+enum PostCheck {
+    // Check if the gRPC endpoint is reachable 
+    GRPC_RESPONSIVE = 0;
+
+    // Check if node reached the next block height 
+    CHAIN_HEIGHT_INCREASED = 1;
+
+    // Check if we signed the first block post upgrade
+    FIRST_BLOCK_VOTED = 2;
+}
+
+enum CheckStatus {
+    // Check is waiting to be executed
+    PENDING = 0;
+
+    // Check is currently being executed
+    RUNNING = 1;
+
+    // Check execution has finished
+    FINISHED = 2;
+}

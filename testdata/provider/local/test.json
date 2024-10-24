@@ -1,0 +1,49 @@
+{
+    "upgrades": [
+        {
+            "height": 10,
+            "tag": "v1.0.0",
+            "network": "test",
+            "name": "invalid_upcoming_upgrade_due_to_passed_height",
+            "type": 1,
+            "priority": 1,
+            "source": 1
+        },
+        {
+            "height": 100,
+            "tag": "v1.0.0",
+            "network": "test",
+            "name": "valid_upcoming_upgrade",
+            "type": 1,
+            "priority": 1,
+            "source": 1
+        },
+        {
+            "height": 101,
+            "network": "test",
+            "name": "valid_upgrade_without_tag",
+            "type": 1,
+            "priority": 1,
+            "source": 1
+        },
+        {
+            "height": 102,
+            "tag": "v1.0.0",
+            "network": "test",
+            "name": "invalid_upcoming_upgrade_due_to_cancelled_status",
+            "type": 1,
+            "status": 6,
+            "priority": 1,
+            "source": 1
+        }
+    ],
+    "versions": [
+        {
+            "height": 10,
+            "network": "test",
+            "tag": "a-tag",
+            "source": 0,
+            "priority": 1
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option go_package = "internal/pkg/proto/blazar";
+
+service Blazar {
+    rpc GetLastestHeight (GetLatestHeightRequest) returns (GetLatestHeightResponse) {}
+}
+
+message GetLatestHeightRequest {}
+
+message GetLatestHeightResponse {
+    int64 height = 1;
+    string network = 2;
+}

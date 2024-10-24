@@ -1,0 +1,23 @@
+{
+    "upgrades": [
+        {
+            "height": 10,
+            "tag": "v1.0.0",
+            "network": "test",
+            "name": "an upgrade",
+            "type": 1,
+            "priority": 1,
+            "source": 1
+        },
+        {
+            "height": 10,
+            "tag": "v1.0.0-different",
+            "network": "test",
+            "name": "a different upgrade",
+            "type": 1,
+            "priority": 1,
+            "source": 1
+        }
+    ],
+    "versions": []
+}

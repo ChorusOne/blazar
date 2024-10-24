@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Blazar Proxy</title>
+    <meta name="description" content="Blazar - Aggregate information about Blazar instances" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css"
+    />
+    <style>
+      :root {
+        --pico-font-size: 90%;
+      }
+
+      .badge {
+          display: inline-flex;
+          align-items: center;
+          background-color: #525252;
+          border-radius: 3px;
+          color: white;
+          padding: 5px 10px;
+          margin-bottom: 1px;
+          font-size: var(--pico-font-size);
+      }
+
+      .badge .count {
+          background-color: #409614;
+          padding: 2px 6px;
+          border-radius: 3px;
+          margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="container">
+    <div style="display: flex; align-items: left; justify-content: left">
+      <div>
+        <img src="data:image/png;base64,{{ .LogoBase64 }}" style="height: 160px" />
+      </div>
+      <div style="padding-left: 20px;">
+        <hgroup>
+          <h1>Blazar Proxy</h1>
+          <p>Aggregate information about Blazar instances</p>
+        </hgroup>
+        <section id="">
+          <p>
+              <div class="badge"><span>Networks</span><span class="count">{{ .NoNetworks }}</span></div>
+              <div class="badge"><span>Instances</span><span class="count">{{ .NoInstances }}</span></div>
+              <div class="badge"><span>Errors</span><span class="count">{{ .NoErrors }}</span></div>
+              <div class="badge"><span>Active</span><span class="count">{{ .NoActive }}</span></div>
+              <div class="badge"><span>Executing</span><span class="count">{{ .NoExecuting }}</span></div>
+              <div class="badge"><span>Expired</span><span class="count">{{ .NoExpired }}</span></div>
+              <div class="badge"><span>Completed</span><span class="count">{{ .NoCompleted }}</span></div>
+              <div class="badge"><span>Fetch Time</span><span class="count">{{ .FetchTime }}</span></div>
+          </p>
+          <hr />
+          {{ if .Warning }}
+          <p><mark>{{ .Warning }}</mark></p>
+          {{ else }}
+          <p><mark id="blazar_status_mark" style="background-color: #9bcffd">Blazar Proxy is now synchronized! Now you should see the aggregate list of the latest upgrades from each instance</mark></p>
+          {{ end }}
+        </section>
+      </div>
+    </div>
+    </header>
+    <!-- ./ Header -->
+    <!-- Main -->
+    <main class="container">
+      <!-- Tables -->
+      <section id="tables">
+        {{if (lt .NoErrors .NoInstances) }}
+        <h2>Registered Upgrades</h2>
+        <div>
+          <table class="striped">
+            <thead>
+              <tr>
+                <th scope="col">Instance</th>
+                <th scope="col">Height</th>
+                <th scope="col">Tag</th>
+                <th scope="col">Network</th>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Status</th>
+                <th scope="col">Step</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range $network, $pairs := .Upgrades}}
+              {{range $index, $pair := $pairs}}
+              {{if not $pair.Error }}
+              <tr>
+              <th scope="col">
+                <a href="http://{{$pair.Instance.Host}}:{{$pair.Instance.HTTPPort}}">
+                {{ $pair.Instance.Name }}
+                </a>
+              </th>
+              {{if $pair.LastUpgrade}}
+                <th scope="col">{{ $pair.LastUpgrade.Height }}</th>
+                <th scope="col">
+                {{ if $pair.LastUpgrade.Tag }}
+                {{ $pair.LastUpgrade.Tag }}
+                {{ else }}
+                <div style="border-bottom: none; color: #ff9500" data-tooltip="Without version tag Blazar will ignore the upgrade">⚠ </div>
+                {{ end }}
+                </th>
+                <th scope="col">{{ $pair.LastUpgrade.Network }}</th>
+                <th scope="col">{{ $pair.LastUpgrade.Name }}</th>
+                <th scope="col">{{ $pair.LastUpgrade.Type }}</th>
+                <th scope="col">{{ $pair.LastUpgrade.Status }}</th>
+                <th scope="col">{{ $pair.LastUpgrade.Step }}</th>
+                <th scope="col">{{ $pair.LastUpgrade.Priority }}</th>
+                <th scope="col">{{ $pair.LastUpgrade.Source }}</th>
+              {{else}}
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+              {{end}}
+              </tr>
+              {{end}}
+              {{end}}
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{end}}
+        {{if .NoErrors }}
+        <h2>Proxy Errors</h2>
+        <div>
+          <table class="striped">
+            <thead>
+              <tr>
+                <th scope="col">Instance</th>
+                <th scope="col">Network</th>
+                <th scope="col">Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range $network, $pairs := .Upgrades}}
+              {{range $index, $pair := $pairs}}
+              {{if $pair.Error }}
+              <tr>
+                  <th scope="col">
+                    <a href="http://{{$pair.Instance.Host}}:{{$pair.Instance.HTTPPort}}">
+                    {{ $pair.Instance.Name }}
+                    </a>
+                  </th>
+                  <th scope="col">{{$pair.Instance.Network}}</th>
+                  <th scope="col">{{$pair.Error}}</th>
+              </tr>
+              {{end}}
+              {{end}}
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {{end}}
+      <!-- ./ Tables -->
+    </main>
+    <!-- ./ Main -->
+  </body>
+</html>

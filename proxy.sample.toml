@@ -1,0 +1,17 @@
+# The Blazar Proxy binds to given host and port.
+host = "0.0.0.0"
+http-port = 1234
+
+[[instance]]
+name = "localhost"
+host = "127.0.0.1"
+http-port = 1234
+grpc-port = 5678
+network = "<network>"
+
+# [[instance]]
+# name = "<host>"
+# host = "<ip>"
+# http-port = <port>
+# grpc-port = <port>
+# network = "<network>"

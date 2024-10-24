@@ -1,0 +1,198 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+option go_package = "internal/pkg/proto/upgrades_registry";
+
+service UpgradeRegistry {
+    // register a new upgrade with blazar
+    rpc AddUpgrade (AddUpgradeRequest) returns (AddUpgradeResponse) {
+      option (google.api.http) = { post: "/v1/upgrades/add", body: "*" };
+    }
+
+    // list upgrades registered with blazar
+    rpc ListUpgrades (ListUpgradesRequest) returns (ListUpgradesResponse) {
+      option (google.api.http) = { get: "/v1/upgrades/list" };
+    }
+
+    // cancel upgrade
+    rpc CancelUpgrade (CancelUpgradeRequest) returns (CancelUpgradeResponse) {
+      option (google.api.http) = { post: "/v1/upgrades/cancel", body: "*" };
+    }
+
+    // force the registry to sync the upgrades from all registered providers
+    rpc ForceSync (ForceSyncRequest) returns (ForceSyncResponse) {
+      option (google.api.http) = { post: "/v1/upgrades/force_sync", body: "*" };
+    }
+}
+
+enum UpgradeStep {
+    // NONE is the default step of an upgrade. It means that the upgrade is not being executed
+    NONE = 0;
+
+    // MONITORING means that blazar sees the upcoming upgrade and is monitoring the chain for the upgrade height
+    MONITORING = 1;
+
+    // DOCKER_COMPOSE_FILE_UPGRADE indicates the blazar is executing the core part of the upgrade vua docker compose
+    COMPOSE_FILE_UPGRADE = 2;
+
+    // PRE_UPGRADE_CHECK indicates that the blazar is executing the pre-upgrade checks
+    PRE_UPGRADE_CHECK = 3;
+
+    // POST_UPGRADE_CHECK indicates that the blazar is executing the post-upgrade checks
+    POST_UPGRADE_CHECK = 4;
+}
+
+enum UpgradeStatus {
+    // UNKNOWN is the default status of an upgrade. It means that the status
+    UNKNOWN = 0;
+
+    // SCHEDULED is the initial status of an upgrade. It means that the
+    // upgrade is registered with the registry but it's not active yet.
+    //
+    // An upgrade coming from the chain governance that is still being voted on, is marked as scheduled
+    SCHEDULED = 1;
+
+    // ACTIVE means that the upgrade is acknowledged by network governance or a user and is ready to be executed.
+    ACTIVE = 2;
+
+    // EXECUTING means that the upgrade is currently being executed. The height is reached.
+    EXECUTING = 3;
+
+    // COMPLETED means that the upgrade has been successfully executed.
+    COMPLETED = 4;
+
+    // FAILED means that the upgrade has failed to execute.
+    FAILED = 5;
+
+    // CANCELLED means that the upgrade has been cancelled by a user or the network
+    CANCELLED = 6;
+
+    // EXPIRED means that the upgrade time has passed and blazar did not do anything about it (e.g historical upgrade from the chain governance)
+    EXPIRED = 7;
+}
+
+enum UpgradeType {
+    // GOVERNANCE is a coordinated upgrade that is initiated by the chain
+    // governance. The upgrade is expected to be coordinated across all
+    // validators at specific height.
+    //
+    // Requirements:
+    // * there is an onchain governance proposal that has passed
+    GOVERNANCE = 0;
+
+    // NON_GOVERNANCE_COORDINATED the upgrade is not coming from the chain,
+    // but rather is initiated by the operators.
+    //
+    // Requirements:
+    // * there should be no onchain governance proposal
+    // * the upgrade is expected to happen at the same height for all validators (usually it's a state breaking change)
+    NON_GOVERNANCE_COORDINATED = 1;
+
+    // NON_GOVERNANCE_UNCOORDINATED the upgrade is not coming from the chain,
+    // but rather is initiated by the operators.
+    //
+    // Requirements:
+    // * there should be no onchain governance proposal
+    // * the upgrade is not expected to happen at any specific height. Validators are free to upgrade at their own pace. (usually non-state breaking changes)
+    NON_GOVERNANCE_UNCOORDINATED = 2;
+}
+
+enum ProviderType {
+    // CHAIN means that the upgrade is coming from onchain governance
+    CHAIN = 0;
+
+    // LOCAL means that the upgrade is coming from blazar local storage
+    LOCAL = 1;
+
+    // DATABASE means that the upgrade is coming from the database (e.g PostgreSQL)
+    DATABASE = 2;
+}
+
+message Upgrade {
+    // the height at which the upgrade is expected to happen
+    // @gotags: gorm:"primaryKey;not null"
+    int64 height = 1;
+
+    // docker image tag
+    // @gotags: gorm:"type:text;not null"
+    string tag = 2;
+
+    // cosmos network name (e.g. cosmoshub) or chain id (e.g. cosmoshub-4)
+    // @gotags: gorm:"primaryKey;type:text;not null"
+    string network = 3;
+
+    // the short title of the upgrade (e.g. "Coordinated upgrade to v0.42.4 announced on discord channel #announcements")
+    // @gotags: gorm:"type:text;not null"
+    string name = 4;
+
+    // type of the upgrade (defines what checks and actions should be taken)
+    // @gotags: gorm:"not null"
+    UpgradeType type = 5;
+
+    // status of the upgrade (DONT set this field manually, it's managed by the registry)
+    // @gotags: gorm:"default:0;not null"
+    UpgradeStatus status = 6;
+
+    // current execution step (DONT set this field manually, it's managed by the registry)
+    // @gotags: gorm:"default:0;not null"
+    UpgradeStep step = 7;
+
+    // priority of the upgrade (highest priority wins)
+    // @gotags: gorm:"primaryKey"
+    int32 priority = 8;
+
+    // source of the upgrade
+    // @gotags: gorm:"not null"
+    ProviderType source = 9;
+
+    // propoal id associated with the upgrade
+    optional int64 proposal_id = 10;
+}
+
+// This is the structure of <chain-home>/blazar/upgrades.json
+message Upgrades {
+    repeated Upgrade upgrades = 1;
+}
+
+message AddUpgradeRequest {
+    // The new upgrade to be registered
+    Upgrade upgrade = 1;
+
+    // If set to true, the upgrade will be overwritten if it already exists
+    bool overwrite = 2;
+}
+
+message AddUpgradeResponse  {}
+
+message ListUpgradesRequest {
+    bool disable_cache = 1;
+
+    optional int64 height = 2;
+    optional UpgradeType type = 3;
+    optional ProviderType source = 4;
+    repeated UpgradeStatus status = 5;
+    optional int64 limit = 6;
+}
+
+message ListUpgradesResponse  {
+    repeated Upgrade upgrades = 1;
+}
+
+message CancelUpgradeRequest {
+    int64 height = 1;
+    ProviderType source = 2;
+
+    // if set to true, the upgrade is cancelled through the state machine, in this case 'source' is ignored
+    bool force = 3;
+}
+
+message CancelUpgradeResponse {}
+
+// ForceSyncRequest is used to force the registry to sync the upgrades from all registered providers
+message ForceSyncRequest {}
+
+message ForceSyncResponse {
+    // the height at which the registry is currently synced
+    int64 height = 1;
+}

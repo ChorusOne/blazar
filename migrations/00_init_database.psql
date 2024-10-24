@@ -1,0 +1,36 @@
+-- Note, run this as a database superuser.
+-- This file has extension .psql instead of .sql, so that it does not get
+-- executed by `sqlx`. `sqlx` needs to connect as `blazar_setup` user, but this
+-- is the migration that creates that user, so we treat it separately. Also,
+-- this file has a `psql` directive in it, so it must be executed by `psql`.
+
+-- Role used by the application.
+CREATE ROLE blazar_app LOGIN PASSWORD 'blazar_app';
+
+-- Role used for migrations and administration.
+CREATE ROLE blazar_setup LOGIN PASSWORD 'blazar_setup';
+
+-- Role used for querying.
+CREATE ROLE blazar_readonly LOGIN PASSWORD 'blazar_readonly';
+
+CREATE DATABASE blazar OWNER blazar_setup;
+
+\connect blazar;
+
+-- By default, PostgreSQL creates a schema "public" that can be modified
+-- by any user ("PUBLIC"). We want more selective permissions.
+REVOKE ALL PRIVILEGES ON SCHEMA public FROM PUBLIC;
+GRANT USAGE ON SCHEMA public TO blazar_app;
+GRANT USAGE ON SCHEMA public TO blazar_readonly;
+GRANT USAGE, CREATE ON SCHEMA public TO blazar_setup;
+
+-- The user "blazar_setup" will create new tables. When it creates them,
+-- "blazar_app" and "blazar_readonly" should be given access. So we need to
+-- modify the default privileges of "blazar_setup" to grant to them.
+ALTER DEFAULT PRIVILEGES FOR ROLE blazar_setup
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES
+TO blazar_app;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE blazar_setup
+GRANT SELECT ON TABLES
+TO blazar_readonly;

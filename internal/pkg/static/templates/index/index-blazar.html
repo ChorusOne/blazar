@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Blazar</title>
+    <meta name="description" content="Blazar - Auto upgrades for Cosmos-SDK networks" />
+    <script
+	  src="https://code.jquery.com/jquery-3.7.1.min.js"
+	  integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+	  crossorigin="anonymous">
+    </script>
+    <script>
+        function handleButton(btnId, action) {
+            switch (action) {
+                case 'enable':
+                    $(btnId)
+                      .html('Submit')
+                      .attr('aria-busy', false)
+                      .prop('disabled', false)
+                      .removeClass('secondary');
+                    break;
+                case 'disable':
+                    $(btnId)
+                      .html('Please wait...')
+                      .attr('aria-busy', true)
+                      .prop('disabled', true)
+                      .addClass('secondary');
+                    break;
+            }
+        }
+
+        function handleStatus(statusId, action, data) {
+            switch (action) {
+                case 'success':
+                    $(statusId)
+                      .html('Request was successful')
+                      .css('visibility', 'visible')
+                      .css('color', 'green');
+                    break;
+                case 'failure':
+                    $(statusId)
+                      .html('Error ' + data)
+                      .css('visibility', 'visible')
+                      .css('color', 'red');
+                    break;
+            }
+        }
+
+        $(() => {
+            // Register upgrade
+            $("#registerUpgradeBtn").click(function(ev) {
+                const form = $("#registerUpgradeForm");
+                const url = form.attr('action');
+                const data = form.serializeArray();
+
+                let obj = {};
+                jQuery.map(data, function (n, i) {
+                    obj[n.name] = n.value;
+                });
+
+                const req = {
+                  "upgrade": {
+                    "height": Number(obj.height),
+                    "tag": obj.tag,
+                    "name": obj.name,
+                    "type": Number(obj.type),
+                    "source": Number(obj.source),
+                    "priority": Number(obj.priority)
+                  },
+                  "overwrite": $("#overwriteUpgrade").is(":checked")
+                }
+
+                handleButton("#registerUpgradeBtn", 'disable');
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    contentType: "application/json",
+                    data: JSON.stringify(req),
+                    success: function(data) {
+                        handleButton("#registerUpgradeBtn", 'enable');
+                        handleStatus("#registerUpgradeStatus", 'success');
+                    },
+                    error: function(data) {
+                        handleButton("#registerUpgradeBtn", 'enable');
+                        handleStatus("#registerUpgradeStatus", 'failure', data.responseText);
+                    }
+                });
+            });
+
+            // Register version
+            $("#registerVersionBtn").click(function(ev) {
+                const form = $("#registerVersionForm");
+                const url = form.attr('action');
+                const data = form.serializeArray();
+
+                let obj = {};
+                jQuery.map(data, function (n, i) {
+                    obj[n.name] = n.value;
+                });
+
+                const req = {
+                  "version": {
+                    "height": Number(obj.height),
+                    "tag": obj.tag,
+                    "source": Number(obj.source),
+                    "priority": Number(obj.priority)
+                  },
+                  "overwrite": $("#overwriteVersion").is(":checked")
+                }
+
+                handleButton("#registerVersionBtn", 'disable');
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    contentType: "application/json",
+                    data: JSON.stringify(req),
+                    success: function(data) {
+                        handleButton("#registerVersionBtn", 'enable');
+                        handleStatus("#registerVersionStatus", 'success');
+                    },
+                    error: function(data) {
+                        handleButton("#registerVersionBtn", 'enable');
+                        handleStatus("#registerVersionStatus", 'failure', data.responseText);
+                    }
+                });
+            });
+
+            // Cancel upgrade
+            $("#cancelUpgradeBtn").click(function(ev) {
+                const form = $("#cancelUpgradeForm");
+                const url = form.attr('action');
+                const data = form.serializeArray();
+
+                let obj = {};
+                jQuery.map(data, function (n, i) {
+                    obj[n.name] = n.value;
+                });
+
+                const req = {
+                  "height": Number(obj.height),
+                  "source": Number(obj.source),
+                  "force": $("#force").is(":checked")
+                }
+
+                handleButton("#cancelUpgradeBtn", 'disable');
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    contentType: "application/json",
+                    data: JSON.stringify(req),
+                    success: function(data) {
+                        handleButton("#cancelUpgradeBtn", 'enable');
+                        handleStatus("#cancelUpgradeStatus", 'success');
+                    },
+                    error: function(data) {
+                        handleButton("#cancelUpgradeBtn", 'enable');
+                        handleStatus("#cancelUpgradeStatus", 'failure', data.responseText);
+                    }
+                });
+            });
+
+            // Force sync
+            $("#force_sync").click(function(ev) {
+                const url = "/v1/upgrades/force_sync";
+
+                $("#blazar_status_mark").attr("style", "").html("Blazar is now synchronizing the state. This may take a few seconds...");
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    success: function(data) {
+                        $("#blazar_status_mark").attr("style", "background-color: #9bcffd").html("Blazar is forcefully synchronized at height: " + data.height);
+                    },
+                    error: function(data) {
+                        $("#blazar_status_mark").attr("style", "background-color: #f5b7a8").html("Blazar failed to synchronize: " + JSON.stringify(data));
+                    }
+                });
+            });
+        });
+    </script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css"
+    />
+    <style>
+      :root {
+        --pico-font-size: 90%;
+      }
+
+      .badge {
+          display: inline-flex;
+          align-items: center;
+          background-color: #525252;
+          border-radius: 3px;
+          color: white;
+          padding: 5px 10px;
+          margin-bottom: 1px;
+          font-size: var(--pico-font-size);
+      }
+
+      .badge .count {
+          background-color: #409614;
+          padding: 2px 6px;
+          border-radius: 3px;
+          margin-left: 5px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Header -->
+    <header class="container">
+    <div style="display: flex; align-items: left; justify-content: left">
+      <div>
+        <img src="data:image/png;base64,{{ .LogoBase64 }}" style="height: 160px" />
+      </div>
+      <div style="padding-left: 20px;">
+        <hgroup>
+          <h1>Blazar Status ({{ .Hostname }})</h1>
+          <p>Automatic node upgrades for Cosmos SDK networks</p>
+        </hgroup>
+        <section id="">
+          <p>
+              <div class="badge"><span>Network</span><span class="count">{{ .DefaultNetwork }}</span></div>
+              <div class="badge"><span>Current Height</span><span class="count">{{ .CurrentBlockHeight }}</span></div>
+              <div class="badge"><span>Last Update</span><span class="count">{{ .LastUpdateTime }} ({{ .LastUpdateDiff }} ago)</span></div>
+              <div class="badge"><span>Avg Block Speed</span><span class="count">{{ .BlockSpeed }}s</span></div>
+              <div class="badge"><span>Time to next sync</span><span class="count">{{ .SecondsToNextUpdate }}s</span></div>
+              <div class="badge" style="background-color: var(--pico-primary-background)">
+                  <a href="#" id="force_sync" style="color: white; padding: 2px 6px" data-tooltip="Send a request to force sync the state">Force Sync</a>
+              </div>
+          </p>
+          <hr />
+          {{ if .Warning }}
+          <p><mark>{{ .Warning }}</mark></p>
+          {{ else }}
+          <p><mark id="blazar_status_mark" style="background-color: #9bcffd">Blazar is synchronized! Now you should see the list of registered upgrades observed by this blazar instance.</mark></p>
+          {{ end }}
+        </section>
+      </div>
+    </div>
+    </header>
+    <!-- ./ Header -->
+    <!-- Main -->
+    <main class="container">
+      <!-- Accordions -->
+      <section id="accordions">
+        <h2>Actions</h2>
+        <!-- Register upgrades -->
+        <details>
+          <summary role="button" class="outline">Register New Upgrade</summary>
+          <form id="registerUpgradeForm" action="/v1/upgrades/add">
+            <div class="grid">
+              <label for="height">
+                Height
+                <input type="text" id="height" name="height" placeholder="Height" />
+              </label>
+              <label for="tag">
+                Tag
+                <input type="text" id="tag" name="tag" placeholder="Tag" />
+              </label>
+
+              <label for="name">
+                Name
+                <input type="name" id="name" name="name" placeholder="Name" />
+              </label>
+
+              <label for="type">
+                Type
+                <select id="type" name="type" required>
+                  {{range $key, $name := .UpgradeTypes}}
+                  <option value="{{ $key }}" selected>{{ $name }}</option>
+                  {{end}}
+                </select>
+              </label>
+              <label for="source">
+                <a href="#" data-tooltip="Scope of addition e.g LOCAL affects only one node">Source</a>
+                <select id="source" name="source" required>
+                  {{range $key, $name := .Providers}}
+                  <option value="{{ $key }}" selected>{{ $name }}</option>
+                  {{end}}
+                </select>
+              </label>
+              <label for="priority">
+                Priority (Optional)
+                <input type="number" min="1" max="99" id="priority" name="priority" placeholder="Priority" />
+              </label>
+            </div>
+            <label for="overwrite">
+              <input type="checkbox" id="overwriteUpgrade" name="overwrite" role="switch" />
+              Overwrite
+            </label>
+            <button type="button" style="width: 100%" id="registerUpgradeBtn" aria-describedby="invalid-helper">Submit</button>
+            <small id="registerUpgradeStatus" style="visibility: collapse" ></small>
+          </form>
+        </details>
+
+        <!-- Register version -->
+        <details>
+          <summary role="button" class="outline">Register New Version</summary>
+          <form id="registerVersionForm" action="/v1/versions/add">
+            <div class="grid">
+              <label for="height">
+                Height
+                <input type="text" id="height" name="height" placeholder="Height" />
+              </label>
+              <label for="tag">
+                Tag
+                <input type="text" id="tag" name="tag" placeholder="Tag" />
+              </label>
+              <label for="source">
+                <a href="#" data-tooltip="Scope of addition e.g LOCAL affects only one node">Source</a>
+                <select id="source" name="source" required>
+                  {{range $key, $name := .Providers}}
+                  <option value="{{ $key }}" selected>{{ $name }}</option>
+                  {{end}}
+                </select>
+              </label>
+              <label for="priority">
+                Priority (Optional)
+                <input type="number" min="1" max="99" id="priority" name="priority" placeholder="Priority" />
+              </label>
+            </div>
+            <label for="overwrite">
+              <input type="checkbox" id="overwriteVersion" name="overwrite" role="switch" />
+              Overwrite
+            </label>
+            <button type="button" style="width: 100%" id="registerVersionBtn" aria-describedby="invalid-helper">Submit</button>
+            <small id="registerVersionStatus" style="visibility: collapse" ></small>
+          </form>
+        </details>
+
+        <!-- Cancel Upgrade -->
+        <details>
+          <summary role="button" class="outline">Cancel Upgrade</summary>
+          <form id="cancelUpgradeForm" action="/v1/upgrades/cancel">
+            <div class="grid">
+              <label for="height">
+                Height
+                <input type="text" id="height" name="height" placeholder="Height" />
+              </label>
+              <label for="source">
+                <a href="#" data-tooltip="Scope of cancellation e.g LOCAL affects only one node">Source</a>
+                <select id="source" name="source" required>
+                  {{range $key, $name := .Providers}}
+                  <option value="{{ $key }}" selected>{{ $name }}</option>
+                  {{end}}
+                </select>
+              </label>
+            </div>
+            <label for="force">
+              <input type="checkbox" id="force" name="force" role="switch" />
+              <a href="#" data-tooltip="Cancel immediately by updating the state machine directly">Force</a>
+            </label>
+            <button type="button" style="width: 100%" id="cancelUpgradeBtn" aria-describedby="invalid-helper">Submit</button>
+            <small id="cancelUpgradeStatus" style="visibility: collapse" ></small>
+          </form>
+        </details>
+      </section>
+      <!-- ./ Accordions -->
+      <!-- Tables -->
+      <section id="tables">
+        <h2>Registered Upgrades</h2>
+        <div>
+          <table class="striped">
+            <thead>
+              <tr>
+                <th scope="col">Height</th>
+                <th scope="col">Tag</th>
+                <th scope="col">Network</th>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Status</th>
+                <th scope="col">Step</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Source</th>
+                <th scope="col">ProposalID</th>
+                <th scope="col">ETA (Blocks)</th>
+                <th scope="col">ETA</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range $index, $element := .Upgrades}}
+              <tr>
+                <th scope="col">{{ $element.Height }}</th>
+                <th scope="col">
+                {{ if $element.Tag }}
+                {{ $element.Tag }}
+                {{ else }}
+                <div style="border-bottom: none; color: #ff9500" data-tooltip="Without version tag Blazar will ignore the upgrade">⚠ </div>
+                {{ end }}
+                </th>
+                <th scope="col">{{ $element.Network }}</th>
+                <th scope="col">{{ $element.Name }}</th>
+                <th scope="col">{{ $element.Type }}</th>
+                <th scope="col">{{ $element.Status }}</th>
+                <th scope="col">{{ $element.Step }}</th>
+                <th scope="col">{{ $element.Priority }}</th>
+                <th scope="col">{{ $element.Source }}</th>
+                <th scope="col">{{ $element.ProposalId }}</th>
+                <th scope="col">
+                    {{ if gt .Height $.CurrentBlockHeight }}
+                    {{ index $.BlocksToUpgrade .Height }}
+                    {{ end }}
+                </th>
+                <th scope="col">
+                    {{ if gt .Height $.CurrentBlockHeight }}
+                    {{ index $.BlocksToETA .Height }}
+                    {{ end }}
+                </th>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <!-- ./ Tables -->
+    </main>
+    <!-- ./ Main -->
+  </body>
+</html>

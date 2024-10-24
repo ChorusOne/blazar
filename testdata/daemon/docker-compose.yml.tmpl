@@ -1,0 +1,17 @@
+version: '3'
+services:
+  {{ .ServiceName }}:
+    image: {{.Image}}
+    user: ${MY_UID}:${MY_UID}
+    restart: no
+    volumes:
+      - ./chain-home:/.simapp
+    environment:
+      - SIMD_HALT_HEIGHT=${HALT_HEIGHT}
+    logging:
+      options:
+        max-size: "10g"
+        max-file: "3"
+    ports:
+      - {{ .GrpcPort }}:9090
+      - {{ .CometbftPort }}:26657
