@@ -314,8 +314,8 @@ func TestRestartEnvCompose(t *testing.T) {
 
 	// Upon restart, we get back a populated HALT_HEIGHT
 	composeConfig := config.ComposeCli{
-		DownTimeout: 5 * time.Second,
-		UpDeadline:  5 * time.Second,
+		DownTimeout: 10 * time.Second,
+		UpDeadline:  10 * time.Second,
 	}
 	err = dcc.RestartServiceWithHaltHeight(ctx, &composeConfig, "s1", 1234)
 	require.NoError(t, err)

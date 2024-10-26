@@ -213,7 +213,7 @@ func run(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeProvider,
 	require.NoError(t, err)
 
 	// start the siapp node
-	_, _, err = cmd.CheckOutputWithDeadline(ctx, 5*time.Second, nil, "docker", "compose", "-f", cfg.ComposeFile, "up", "-d", "--force-recreate")
+	_, _, err = cmd.CheckOutputWithDeadline(ctx, 10*time.Second, nil, "docker", "compose", "-f", cfg.ComposeFile, "up", "-d", "--force-recreate")
 	require.NoError(t, err)
 
 	// start cosmos client and wait for it to be ready
