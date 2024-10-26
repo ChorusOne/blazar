@@ -120,7 +120,17 @@ func (sm *StateMachine) UpdateStatus(currentHeight int64, upgrades map[int64]*ur
 			// if the new status is coming from governance proposal then we update
 			// otherwise it must have been set by a blazar instance while processing upgrade
 			if !slices.Contains(statusManagedByStateMachine, sm.state.UpgradeStatus[upgrade.Height]) {
-				sm.state.UpgradeStatus[upgrade.Height] = upgrade.Status
+				// f a gov upgrade comes through non chain provider, we will need
+				// to mark it active
+				// This can be useful on chain which have gov upgrades but don't
+				// support the cosmos sdk standard governance proposals endpoint
+				if upgrade.Source != urproto.ProviderType_CHAIN {
+					if upgrade.Height > currentHeight {
+						sm.state.UpgradeStatus[upgrade.Height] = urproto.UpgradeStatus_ACTIVE
+					}
+				} else {
+					sm.state.UpgradeStatus[upgrade.Height] = upgrade.Status
+				}
 			}
 		case urproto.UpgradeType_NON_GOVERNANCE_COORDINATED, urproto.UpgradeType_NON_GOVERNANCE_UNCOORDINATED:
 			// mark the upgrade as 'ready for exection' (active)
