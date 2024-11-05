@@ -13,7 +13,7 @@
     ·
     <a href="#cli--rest-interface">CLI</a>
     ·
-    <a href="#blazar-ui">Web UI</a>
+    <a href="#what-is-blazar">Web UI</a>
     ·
     <a href="#proxy-ui">Proxy UI</a>
     ·
@@ -26,7 +26,9 @@
 ## What is Blazar?
 Blazar is a standalone application designed to automate network upgrades for [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) based blockchain networks.
 
-### The Need for Blazar
+![Web UI](https://github.com/user-attachments/assets/834d4903-b5ab-4a54-8f74-ed1768cf7e6f)
+
+## The Need for Blazar
 At [Chorus One](https://chorus.one), we manage over 50 blockchain networks, many of which are part of the Cosmos Ecosystem. Each network has its own upgrade schedule, which can vary from monthly to bi-weekly, depending on the urgency of the upgrade and Cosmos SDK releases. Our 24/7 on-call team handles multiple upgrades weekly.
 
 The upgrade process is generally straightforward but can be time-consuming. Here's how it typically works:
@@ -38,10 +40,17 @@ The upgrade process is generally straightforward but can be time-consuming. Here
 
 Blazar was created to automate this process, allowing our team to use their time more productively. It currently handles the majority of network upgrades for Cosmos Networks at Chorus One.
 
-## Requirements: Docker & Docker Compose
-Blazar is designed to work with nodes configured and spawned via Docker Compose.
+## Key Features
+- **Upgrade Feeds:** Fetch upgrade information from multiple sources like "Governance", "Database", and "Local".
+- **Upgrade Strategies:** Supports various upgrade scenarios, including height-specific and manually coordinated upgrades.
+- **Pre and Post Upgrade Checks:** Automate checks like docker image existence, node and consensus status.
+- **Stateful Execution:** Tracks upgrade stages to ensure consistent execution flow.
+- **Cosmos SDK Gov/Upgrade Module Compliance:** Understands and respects the Cosmos SDK governance module upgrades.
+- **Slack Integration:** Optional Slack notifications for every action Blazar performs.
+- **Modern Stack:** Includes CLI, UI, REST, gRPC, Prometheus metrics, and Protobuf.
+- **Built by Ops Team:** Developed by individuals with firsthand experience in node operations.
 
-### Why Not Cosmovisor?
+## Comparison to Cosmovisor
 While many operators use [Cosmovisor](https://docs.cosmos.network/main/build/tooling/cosmovisor) with systemd services, this setup doesn't meet our specific needs. Instead of relying on GitHub releases, we [build our own binaries](https://handbook.chorus.one/node-software/build-process.html), ensuring a consistent build environment with Docker. This approach allows us to use exact software versions and generate precise build artifacts (e.g., libwasmvm.so).
 
 Cosmovisor is designed to run as the parent process of a validator node, replacing node binaries at the upgrade height. However, this model isn't compatible with Docker Compose managed services. To address this, we developed Blazar as a more effective solution tailored to our setup.
@@ -67,18 +76,8 @@ Cosmovisor is designed to run as the parent process of a validator node, replaci
 
 \** For Cosmovisor everything looks as [if it was scheduled through governance](https://docs.cosmos.network/main/build/tooling/cosmovisor#detecting-upgrades)
 
-## Key Features
-- **Upgrade Feeds:** Fetch upgrade information from multiple sources like GOVERNANCE, DATABASE, and LOCAL.
-- **Upgrade Strategies:** Supports various upgrade scenarios, including height-specific and manually coordinated upgrades.
-- **Pre and Post Upgrade Checks:** Automate checks like docker image existence, node and consensus status.
-- **Stateful Execution:** Tracks upgrade stages to ensure consistent execution flow.
-- **Cosmos SDK Gov/Upgrade Module Compliance:** Understands and respects the Cosmos SDK governance module upgrades.
-- **Slack Integration:** Optional Slack notifications for every action Blazar performs.
-- **Modern Stack:** Includes CLI, UI, REST, gRPC, Prometheus metrics, and Protobuf.
-- **Built by Ops Team:** Developed by individuals with firsthand experience in node operations.
-
 ## How Blazar Works
-![Blazar Under the Hood](https://github.com/user-attachments/assets/4c72c53a-44d7-4b74-85d7-5fe193e1560a)
+![Blazar Under the Hood](https://github.com/user-attachments/assets/1ecb0629-24bc-472f-a9cf-4d8d5e271a86)
 
 Blazar constructs a prioritized list of upgrades from multiple providers and takes appropriate actions based on the most recent state. It retrieves block heights from WSS endpoints or periodic gRPC polls and triggers Docker components when the upgrade height is reached. Notifications are sent to logs and Slack (if configured).
 
@@ -90,16 +89,16 @@ In simple terms, Blazar performs the following steps:
 5. **Notification Delivery:** Blazar sends notifications to logs and Slack (if configured).
 
 While the logic is simple, it's important to understand the differences between the types of upgrades:
-1. **GOVERNANCE:** A coordinated upgrade initiated by chain governance, expected to be executed by all validators at a specified block height.
-2. **NON-GOVERNANCE COORDINATED:** An upgrade initiated by operators, not by the chain, but it is expected to occur at the same block height across all validators.
-3. **NON-GOVERNANCE UNCOORDINATED:** An operator-initiated upgrade, independent of chain governance, that can be executed at any time.
+1. **Governance:** A coordinated upgrade initiated by chain governance, expected to be executed by all validators at a specified block height.
+2. **Non Governance Coordinated:** An upgrade initiated by operators, not by the chain, but it is expected to occur at the same block height across all validators.
+3. **Non Governance Uncoordinated:** An operator-initiated upgrade, independent of chain governance, that can be executed at any time.
 
 NOTE: Blazar does one job and does it well, meaning you need one Blazar instance per Cosmos-SDK node.
 
 NOTE: You are free to choose your upgrade proposal providers. An SQL database is not mandatory - you can opt to use the "LOCAL" provider or both simultaneously, depending on your needs.
 
 ## Getting Started
-To run Blazar, you need Go (compiler) and Docker Compose on the target machine:
+To use Blazar, first build the binary with the Go compiler, then deploy it on a host with Docker Compose installed.
 ```sh
 $ apt-get install golang
 $ apt-get install docker-compose
@@ -111,6 +110,9 @@ $ cp blazar.sample.toml blazar.toml
 $ make build
 $ ./blazar run --config blazar.toml
 ```
+
+### Requirements: Docker & Docker Compose
+Blazar is designed to work with nodes configured and spawned via Docker Compose.
 
 ### CLI & REST Interface
 Register or list upgrades using the CLI:
@@ -125,12 +127,6 @@ Or use the REST interface:
 ```
 curl -s http://127.0.0.1:1234/v1/upgrades/list
 ```
-
-### Blazar UI
-Quickly register a new version tag and upgrade using the UI.
-
-![Web UI](https://github.com/user-attachments/assets/834d4903-b5ab-4a54-8f74-ed1768cf7e6f)
-
 
 ### Slack Integration
 Track the upgrade process in a single Slack thread 🧵.
