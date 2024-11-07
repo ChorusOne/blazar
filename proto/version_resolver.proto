@@ -39,7 +39,7 @@ message Version {
    ProviderType source = 4;
 
    // the version priority
-   // @gotags: gorm:"primaryKey"
+   // @gotags: gorm:"primaryKey;not null"
    int32 priority = 5;
 }
 
