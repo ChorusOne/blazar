@@ -303,7 +303,7 @@ type Upgrade struct {
 	Step UpgradeStep `protobuf:"varint,7,opt,name=step,proto3,enum=UpgradeStep" json:"step,omitempty" gorm:"default:0;not null"`
 	// priority of the upgrade (highest priority wins)
 	 
-	Priority int32 `protobuf:"varint,8,opt,name=priority,proto3" json:"priority,omitempty" gorm:"primaryKey"`
+	Priority int32 `protobuf:"varint,8,opt,name=priority,proto3" json:"priority,omitempty" gorm:"primaryKey;not null"`
 	// source of the upgrade
 	 
 	Source ProviderType `protobuf:"varint,9,opt,name=source,proto3,enum=ProviderType" json:"source,omitempty" gorm:"not null"`

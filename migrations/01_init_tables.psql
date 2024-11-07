@@ -7,7 +7,7 @@ CREATE TABLE "upgrades"
      "type"        INTEGER NOT NULL,
      "status"      INTEGER NOT NULL DEFAULT 0,
      "step"        INTEGER NOT NULL DEFAULT 0,
-     "priority"    INTEGER,
+     "priority"    INTEGER NOT NULL,
      "source"      INTEGER NOT NULL,
      "proposal_id" BIGINT,
      PRIMARY KEY ("height", "network", "priority")
@@ -19,6 +19,6 @@ CREATE TABLE "versions"
      "network"  TEXT NOT NULL,
      "tag"      TEXT,
      "source"   INTEGER NOT NULL,
-     "priority" INTEGER,
+     "priority" INTEGER NOT NULL,
      PRIMARY KEY ("height", "network", "priority")
   )

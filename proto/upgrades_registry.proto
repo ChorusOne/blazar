@@ -139,7 +139,7 @@ message Upgrade {
     UpgradeStep step = 7;
 
     // priority of the upgrade (highest priority wins)
-    // @gotags: gorm:"primaryKey"
+    // @gotags: gorm:"primaryKey;not null"
     int32 priority = 8;
 
     // source of the upgrade

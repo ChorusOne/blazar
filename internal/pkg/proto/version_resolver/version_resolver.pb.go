@@ -40,7 +40,7 @@ type Version struct {
 	Source upgrades_registry.ProviderType `protobuf:"varint,4,opt,name=source,proto3,enum=ProviderType" json:"source,omitempty" gorm:"not null"`
 	// the version priority
 	 
-	Priority int32 `protobuf:"varint,5,opt,name=priority,proto3" json:"priority,omitempty" gorm:"primaryKey"`
+	Priority int32 `protobuf:"varint,5,opt,name=priority,proto3" json:"priority,omitempty" gorm:"primaryKey;not null"`
 }
 
 func (x *Version) Reset() {
