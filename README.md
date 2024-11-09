@@ -221,11 +221,10 @@ Remember that Blazar refreshes its internal state periodically. If you registere
 <details>
   <summary>Does Blazar work with chains with non-standard gov module (e.g., Neutron)?</summary>
 
-Yes, but with limitations. Neutron is a smart contract chain that implements its own governance (DAO DAO) via an on-chain contract. Blazar currently doesn't understand the custom smart contract logic, therefore the operator cannot use the `CHAIN` provider. However, upgrades can still be executed via:
-1. `NON_GOVERNANCE_COORDINATED` - a network operator registers the upgrade at a certain height.
-2. `upgrade-info.json` - the Neutron node will put the `upgrade-info.json` on disk prior to the upgrade. A network operator must register a docker version tag for the expected upgrade height.
+Yes, but you'll need to register manually a `GOVERNANCE` type upgrade in `LOCAL` or `DATABASE` provider.
 
-The downside of option 2 is the lack of pre-upgrade checks.
+Neutron is a smart contract chain that implements its own governance (DAO DAO) via an on-chain contract. Blazar currently doesn't understand the custom smart contract logic, therefore the operator cannot use the `CHAIN` provider.
+However, the Neutron governance is integrated with Cosmos SDK upgrades module and will output the `upgrade-info.json` at the upgrade height. Therefore from Blazar perspective, the `GOVERNANCE` type is valid, but the source provide must be different.
 </details>
 
 <details>

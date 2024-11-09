@@ -53,6 +53,35 @@ func TestStateMachineInitialUpgradeStates(t *testing.T) {
 	}
 }
 
+// Asserts that GOVERNANCE proposals from various chain sources are set to correct initial state
+func TestStateMachineInitialNonChainGov(t *testing.T) {
+	for provider, expectedStatus := range map[urproto.ProviderType]urproto.UpgradeStatus{
+		urproto.ProviderType_CHAIN:    urproto.UpgradeStatus_UNKNOWN,
+		urproto.ProviderType_LOCAL:    urproto.UpgradeStatus_ACTIVE,
+		urproto.ProviderType_DATABASE: urproto.UpgradeStatus_ACTIVE,
+	} {
+		upgrades := []*urproto.Upgrade{
+			{
+				Height: 200,
+				Tag:    "v1.0.0",
+				Name:   "test upgrade",
+				Type:   urproto.UpgradeType_GOVERNANCE,
+				Status: urproto.UpgradeStatus_UNKNOWN,
+				Source: provider,
+			},
+		}
+
+		upgradesMap := make(map[int64]*urproto.Upgrade)
+		for _, upgrade := range upgrades {
+			upgradesMap[upgrade.Height] = upgrade
+		}
+
+		stateMachine := NewStateMachine(nil)
+		stateMachine.UpdateStatus(100, upgradesMap)
+		assert.Equal(t, expectedStatus.String(), stateMachine.GetStatus(200).String())
+	}
+}
+
 // Asserts that the state machine panics when it receives an upgrade with an initial status that is not managed by the state machine
 func TestStateMachineUpgradesAreDeleted(t *testing.T) {
 	currentHeight := int64(100)
