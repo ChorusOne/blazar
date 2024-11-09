@@ -2,23 +2,28 @@ package chain
 
 import (
 	"context"
-	"slices"
+	"sort"
 
-	"blazar/internal/pkg/cosmos"
 	"blazar/internal/pkg/errors"
 	urproto "blazar/internal/pkg/proto/upgrades_registry"
 	"blazar/internal/pkg/provider"
 
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
+type CosmosProposalsProvider interface {
+	GetProposalsV1(ctx context.Context) (v1.Proposals, error)
+	GetProposalsV1beta1(ctx context.Context) (v1beta1.Proposals, error)
+}
+
 type Provider struct {
-	cosmosClient *cosmos.Client
+	cosmosClient CosmosProposalsProvider
 	chain        string
 	priority     int32
 }
 
-func NewProvider(cosmosClient *cosmos.Client, chain string, priority int32) *Provider {
+func NewProvider(cosmosClient CosmosProposalsProvider, chain string, priority int32) *Provider {
 	return &Provider{
 		cosmosClient: cosmosClient,
 		chain:        chain,
@@ -32,22 +37,59 @@ func (p *Provider) GetUpgrades(ctx context.Context) ([]*urproto.Upgrade, error) 
 		return []*urproto.Upgrade{}, err
 	}
 
-	// cosmos-sdk allows changing parameters of a previously passed upgrade
-	// by creating a new upgrade proposal with the same name in upgrade plan
-	// https://github.com/cosmos/cosmos-sdk/blob/41f92723399ef0affa90c6b3d8e7b47b82361280/x/upgrade/keeper/keeper.go#L185
-	// since, upgrades is sorted by proposal ID and we'll only keep last instance for a name
-	// if a passed upgrade already exists for that name
-	passedNames := make(map[string]struct{}, len(upgrades))
-	filtered := make([]chainUpgrade, 0, len(upgrades))
-	slices.Reverse(upgrades)
+	// Blazar expects one upgrade per height, but the governance allows to create multiple proposals for the same height
+	// In the end only one upgrade will be expecuted at given height, no matter how many software upgrades proposals are registered onchain
+	// The most common case fror having more than one proposal is when someone create a new proposal and asks everyone to vote-no on the previous one
+	// due to invalid data etc.
+	//
+	// To handle this case we pick the last proposal for each height with some conditions:
+	// 1. if there is a proposal in PASSED state, we pick it
+	// 2. if there are two equal proposals say in VOTING_PERIOD state, we pick the one with the highest proposal id
+
+	// sort upgrades in descending order by proposal id
+	sort.Slice(upgrades, func(i, j int) bool {
+		return upgrades[i].ProposalID > upgrades[j].ProposalID
+	})
+
+	upgradesByHeight := make(map[int64][]chainUpgrade)
 	for _, upgrade := range upgrades {
-		if _, ok := passedNames[upgrade.Name]; !ok {
+		if _, ok := upgradesByHeight[upgrade.Height]; !ok {
+			upgradesByHeight[upgrade.Height] = make([]chainUpgrade, 0)
+		}
+		upgradesByHeight[upgrade.Height] = append(upgradesByHeight[upgrade.Height], upgrade)
+	}
+
+	filtered := make([]chainUpgrade, 0, len(upgrades))
+	for _, upgradesForHeight := range upgradesByHeight {
+		// if there is only one upgrade for the height, we don't need to do anything
+		if len(upgradesForHeight) == 1 {
+			filtered = append(filtered, upgradesForHeight[0])
+			continue
+		}
+
+		// if there is a passed upgrade, we pick it
+		foundPassed := false
+		for _, upgrade := range upgradesForHeight {
+			// the upgrades are sorted by proposal id in descending order
+			// so the first upgrade in the list is the one with the highest
+			// proposal id (in case there are two PASSED proposals for the same height)
 			if upgrade.Status == PASSED {
-				passedNames[upgrade.Name] = struct{}{}
+				foundPassed = true
+				filtered = append(filtered, upgrade)
+				break
 			}
-			filtered = append(filtered, upgrade)
+		}
+
+		// if there is no passed upgrade, we pick the one with the highest proposal id
+		if !foundPassed {
+			filtered = append(filtered, upgradesForHeight[0])
 		}
 	}
+
+	// sort upgrades in descending order by proposal id because iterating over map doesn't guarantee order
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].ProposalID > filtered[j].ProposalID
+	})
 
 	return toProto(filtered, p.priority), nil
 }
