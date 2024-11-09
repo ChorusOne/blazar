@@ -251,5 +251,21 @@ VERSION_archway=1.0.0
 The `compose-file` is simpler, but we highly recommend the `env-file` mode. If the version tag is stored in the `.env` file, the blast radius of possible mistakes is very low, unlike editing the whole `docker-compose.yaml` to replace one single variable.
 </details>
 
+<details>
+  <summary>What is the purpose of SQL migration files?</summary>
+
+This question is relevant for anyone who wants to use the DATABASE provider.
+
+Blazar leverages [GORM](https://gorm.io) to manage SQL databases. If you enable automatic migrations by setting:
+```toml
+[upgrade-registry.provider.database]
+auto-migrate = true
+```
+
+you can disregard the `migrations` files since [GORM](https://gorm.io) will automatically initialize all necessary SQL tables.
+
+However, if `auto-migrate` is disabled, you'll need to manually apply the migration SQL statements.
+</details>
+
 ## License
 Blazar is licensed under the Apache 2.0 License. For more detailed information, please refer to the LICENSE file in the repository.

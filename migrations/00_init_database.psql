@@ -1,8 +1,5 @@
 -- Note, run this as a database superuser.
--- This file has extension .psql instead of .sql, so that it does not get
--- executed by `sqlx`. `sqlx` needs to connect as `blazar_setup` user, but this
--- is the migration that creates that user, so we treat it separately. Also,
--- this file has a `psql` directive in it, so it must be executed by `psql`.
+-- This script creates the roles and database for Blazar.
 
 -- Role used by the application.
 CREATE ROLE blazar_app LOGIN PASSWORD 'blazar_app';

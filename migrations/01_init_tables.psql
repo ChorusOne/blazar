@@ -1,3 +1,7 @@
+-- Note, run this as a database superuser.
+-- The table schema is generated via GORM, and below SQL snippet was generated via:
+-- `blazar provider database migration dump`
+
 CREATE TABLE "upgrades"
   (
      "height"      BIGINT NOT NULL,
