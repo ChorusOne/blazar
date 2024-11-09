@@ -120,7 +120,20 @@ func (sm *StateMachine) UpdateStatus(currentHeight int64, upgrades map[int64]*ur
 			// if the new status is coming from governance proposal then we update
 			// otherwise it must have been set by a blazar instance while processing upgrade
 			if !slices.Contains(statusManagedByStateMachine, sm.state.UpgradeStatus[upgrade.Height]) {
-				sm.state.UpgradeStatus[upgrade.Height] = upgrade.Status
+				// Some chains implement their own governance system that may be compatible with the cosmos sdk.
+				// Take "Neutron", it uses smart contract for governance and it is also compatible with the cosmos sdk, such that
+				// it produces the upgrade-info.json at the upgrade height.
+				//
+				// We want to handle the case where the GOVERNANCE upgrade is not coming from the chain itself but from anoter provider.
+				// In this case, we want to mark the upgrade as ACTIVE as there is no onchain component (blazar is aware of) that manages the upgrade status.
+				if upgrade.Source != urproto.ProviderType_CHAIN {
+					if upgrade.Height > currentHeight {
+						sm.state.UpgradeStatus[upgrade.Height] = urproto.UpgradeStatus_ACTIVE
+					}
+				} else {
+					// the onchain status is the source of truth
+					sm.state.UpgradeStatus[upgrade.Height] = upgrade.Status
+				}
 			}
 		case urproto.UpgradeType_NON_GOVERNANCE_COORDINATED, urproto.UpgradeType_NON_GOVERNANCE_UNCOORDINATED:
 			// mark the upgrade as 'ready for exection' (active)

@@ -24,6 +24,7 @@ import (
 	"blazar/internal/pkg/log/logger"
 	"blazar/internal/pkg/log/notification"
 	"blazar/internal/pkg/metrics"
+	checksproto "blazar/internal/pkg/proto/daemon"
 	urproto "blazar/internal/pkg/proto/upgrades_registry"
 	vrproto "blazar/internal/pkg/proto/version_resolver"
 	"blazar/internal/pkg/provider"
@@ -253,6 +254,8 @@ func run(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeProvider,
 	// chain process must have logged upgrade height being hit
 	require.Contains(t, stdout.String(), "UPGRADE \"test1\" NEEDED at height: 10")
 
+	requirePreCheckStatus(t, sm, 10)
+
 	// perform the upgrade
 	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.ComposeService, height)
 	require.NoError(t, err)
@@ -271,6 +274,8 @@ func run(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeProvider,
 	// lets see if post upgrade checks pass
 	err = daemon.postUpgradeChecks(ctx, sm, &cfg.Checks.PostUpgrade, height)
 	require.NoError(t, err)
+
+	requirePreCheckStatus(t, sm, 10)
 
 	outBuffer.Reset()
 
@@ -291,6 +296,8 @@ func run(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeProvider,
 	require.Contains(t, outBuffer.String(), fmt.Sprintf("Monitoring %s for new upgrades", cfg.UpgradeInfoFilePath()))
 	require.Contains(t, outBuffer.String(), "Received upgrade height from the chain rpc")
 
+	requirePreCheckStatus(t, sm, 13)
+
 	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.ComposeService, height)
 	require.NoError(t, err)
 
@@ -300,6 +307,8 @@ func run(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeProvider,
 	// Lets see if post upgrade checks pass
 	err = daemon.postUpgradeChecks(ctx, sm, &cfg.Checks.PostUpgrade, height)
 	require.NoError(t, err)
+
+	requirePostCheckStatus(t, sm, 13)
 
 	outBuffer.Reset()
 
@@ -334,6 +343,8 @@ func run(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeProvider,
 	// we want to be sure the pre-check worked
 	require.Contains(t, outBuffer.String(), "HALT_HEIGHT likely worked but didn't shut down the node")
 
+	requirePreCheckStatus(t, sm, 19)
+
 	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.ComposeService, height)
 	require.NoError(t, err)
 
@@ -341,9 +352,21 @@ func run(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeProvider,
 	err = daemon.postUpgradeChecks(ctx, sm, &cfg.Checks.PostUpgrade, height)
 	require.NoError(t, err)
 
+	requirePostCheckStatus(t, sm, 19)
+
 	// cleanup
 	err = dcc.Down(ctx, cfg.ComposeService, cfg.Compose.DownTimeout)
 	require.NoError(t, err)
+}
+
+func requirePreCheckStatus(t *testing.T, sm *state_machine.StateMachine, height int64) {
+	require.Equal(t, checksproto.CheckStatus_FINISHED, sm.GetPreCheckStatus(height, checksproto.PreCheck_PULL_DOCKER_IMAGE))
+	require.Equal(t, checksproto.CheckStatus_FINISHED, sm.GetPreCheckStatus(height, checksproto.PreCheck_SET_HALT_HEIGHT))
+}
+
+func requirePostCheckStatus(t *testing.T, sm *state_machine.StateMachine, height int64) {
+	require.Equal(t, checksproto.CheckStatus_FINISHED, sm.GetPostCheckStatus(height, checksproto.PostCheck_CHAIN_HEIGHT_INCREASED))
+	require.Equal(t, checksproto.CheckStatus_FINISHED, sm.GetPostCheckStatus(height, checksproto.PostCheck_GRPC_RESPONSIVE))
 }
 
 type threadSafeBuffer struct {
@@ -403,7 +426,7 @@ func generateConfig(t *testing.T, tempDir, serviceName string, grpcPort, cometbf
 		},
 		Checks: config.Checks{
 			PreUpgrade: config.PreUpgrade{
-				Enabled: []string{"SET_HALT_HEIGHT"},
+				Enabled: []string{"PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT"},
 				// as soon as possible
 				Blocks: 100,
 				SetHaltHeight: &config.SetHaltHeight{
