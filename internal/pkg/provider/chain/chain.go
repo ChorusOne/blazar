@@ -39,7 +39,7 @@ func (p *Provider) GetUpgrades(ctx context.Context) ([]*urproto.Upgrade, error) 
 
 	// Blazar expects one upgrade per height, but the governance allows to create multiple proposals for the same height
 	// In the end only one upgrade will be expecuted at given height, no matter how many software upgrades proposals are registered onchain
-	// The most common case fror having more than one proposal is when someone create a new proposal and asks everyone to vote-no on the previous one
+	// The most common case for having more than one proposal is when someone create a new proposal and asks everyone to vote-no on the previous one
 	// due to invalid data etc.
 	//
 	// To handle this case we pick the last proposal for each height with some conditions:
