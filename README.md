@@ -29,7 +29,7 @@ Blazar is a standalone application designed to automate network upgrades for [Co
 ![Web UI](https://github.com/user-attachments/assets/834d4903-b5ab-4a54-8f74-ed1768cf7e6f)
 
 ## The Need for Blazar
-At [Chorus One](https://chorus.one), we manage over 50 blockchain networks, many of which are part of the Cosmos Ecosystem. Each network has its own upgrade schedule, which can vary from monthly to bi-weekly, depending on the urgency of the upgrade and Cosmos SDK releases. Our 24/7 on-call team handles multiple upgrades weekly.
+At [Chorus One](https://chorus.one), we manage over 60 blockchain networks, many of which are part of the Cosmos Ecosystem. Each network has its own upgrade schedule, which can vary from monthly to bi-weekly, depending on the urgency of the upgrade and Cosmos SDK releases. Our 24/7 on-call team handles multiple upgrades weekly.
 
 The upgrade process is generally straightforward but can be time-consuming. Here's how it typically works:
 1. An upgrade is announced via a governance proposal or other communication channels (Discord, Telegram, Slack, Email, etc.).
