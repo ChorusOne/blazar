@@ -1,6 +1,6 @@
 <div align="center">
   <a href="#">
-    <img src="https://github.com/user-attachments/assets/2478812c-beb8-4718-ab6b-ecde830e7186" alt="Logo" width="192" height="192">
+    <img src="https://github.com/user-attachments/assets/f5a48a09-b3ce-41d8-8fe9-3937da45038f" alt="Logo" width="192" height="192">
   </a>
 
   <h3 align="center">Blazar: Automatic Cosmos SDK Network Upgrades</h3>
@@ -26,7 +26,7 @@
 ## What is Blazar?
 Blazar is a standalone application designed to automate network upgrades for [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) based blockchain networks.
 
-![Web UI](https://github.com/user-attachments/assets/834d4903-b5ab-4a54-8f74-ed1768cf7e6f)
+![Web UI](https://github.com/user-attachments/assets/3250a2d6-2bb7-4c1e-bc89-e8d15736300c)
 
 ## The Need for Blazar
 At [Chorus One](https://chorus.one), we manage over 60 blockchain networks, many of which are part of the Cosmos Ecosystem. Each network has its own upgrade schedule, which can vary from monthly to bi-weekly, depending on the urgency of the upgrade and Cosmos SDK releases. Our 24/7 on-call team handles multiple upgrades weekly.
@@ -131,8 +131,7 @@ curl -s http://127.0.0.1:1234/v1/upgrades/list
 ### Slack Integration
 Track the upgrade process in a single Slack thread 🧵.
 
-![Slack Notifications](https://github.com/user-attachments/assets/d76e7b44-2015-4682-85e3-863b11918662)
-
+![Slack Notifications](https://github.com/user-attachments/assets/f59139e8-cdf9-4cd1-87bf-e5b1c0a667a7)
 
 ### Proxy UI
 Blazar Proxy consolidates the latest updates from all Blazar instances. Here's how you can run it:
@@ -141,7 +140,7 @@ $ cp proxy.sample.toml proxy.toml
 $ ./blazar proxy --config proxy.toml
 ```
 
-![Proxy UI](https://github.com/user-attachments/assets/25e5844b-3860-4b46-87ad-9febd2e8aa99)
+![Proxy UI](https://github.com/user-attachments/assets/2b80e96e-5e9a-4d59-ae9e-8479c8fdee81)
 
 
 ## Frequently Asked Questions
