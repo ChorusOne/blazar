@@ -111,21 +111,18 @@ func (cc *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
 }
 
 func (cc *Client) GetProposalsV1(ctx context.Context) (v1.Proposals, error) {
-	key := []byte{}
+	var key []byte
 	proposals := make(v1.Proposals, 0, 50)
 
 	for {
-		var cancel context.CancelFunc
-
-		ctx, cancel = context.WithTimeout(ctx, cc.timeout)
-		defer cancel()
-
-		res, err := cc.v1Client.Proposals(ctx, &v1.QueryProposalsRequest{
+		pageCtx, cancel := context.WithTimeout(ctx, cc.timeout)
+		res, err := cc.v1Client.Proposals(pageCtx, &v1.QueryProposalsRequest{
 			Pagination: &query.PageRequest{
 				Key:   key,
 				Limit: cc.paginationLimit,
 			},
 		}, cc.callOptions...)
+		cancel()
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get proposals")
 		}
@@ -139,21 +136,18 @@ func (cc *Client) GetProposalsV1(ctx context.Context) (v1.Proposals, error) {
 }
 
 func (cc *Client) GetProposalsV1beta1(ctx context.Context) (v1beta1.Proposals, error) {
-	key := []byte{}
+	var key []byte
 	proposals := make(v1beta1.Proposals, 0, 50)
 
 	for {
-		var cancel context.CancelFunc
-
-		ctx, cancel = context.WithTimeout(ctx, cc.timeout)
-		defer cancel()
-
-		res, err := cc.v1beta1Client.Proposals(ctx, &v1beta1.QueryProposalsRequest{
+		pageCtx, cancel := context.WithTimeout(ctx, cc.timeout)
+		res, err := cc.v1beta1Client.Proposals(pageCtx, &v1beta1.QueryProposalsRequest{
 			Pagination: &query.PageRequest{
 				Key:   key,
 				Limit: cc.paginationLimit,
 			},
 		}, cc.callOptions...)
+		cancel()
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get proposals")
 		}
