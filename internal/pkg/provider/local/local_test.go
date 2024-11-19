@@ -1,7 +1,6 @@
 package local
 
 import (
-	"context"
 	"path"
 	"sync"
 	"testing"
@@ -133,7 +132,7 @@ func TestLoadFailing(t *testing.T) {
 				lock:       &sync.RWMutex{},
 			}
 
-			_, err := lp.RestoreState(context.Background())
+			_, err := lp.RestoreState()
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.err)
 		})

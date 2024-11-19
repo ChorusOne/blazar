@@ -198,7 +198,7 @@ func (lp *Provider) GetVersionsByHeight(ctx context.Context, height uint64) ([]*
 	return provider.PostProcessVersions(filtered, urproto.ProviderType_LOCAL, lp.priority), nil
 }
 
-func (lp *Provider) StoreState(_ context.Context, state *sm.State) error {
+func (lp *Provider) StoreState(state *sm.State) error {
 	lp.lock.Lock()
 	defer lp.lock.Unlock()
 
@@ -254,7 +254,7 @@ func (lp *Provider) checkUniqueKey(data *localProviderData) error {
 	return nil
 }
 
-func (lp *Provider) RestoreState(_ context.Context) (*sm.State, error) {
+func (lp *Provider) RestoreState() (*sm.State, error) {
 	data, err := lp.readData(true)
 	if err != nil {
 		return nil, err

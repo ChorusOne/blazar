@@ -41,7 +41,7 @@ type UpgradeRegistry struct {
 	// lock for the registry
 	lock *sync.RWMutex
 
-	// a list of latst fetched upgrades
+	// a list of latest fetched upgrades
 	upgrades map[int64]*urproto.Upgrade
 
 	// a list of versions fetched from providers
@@ -76,11 +76,14 @@ func NewUpgradeRegistry(providers map[urproto.ProviderType]provider.UpgradeProvi
 }
 
 func NewUpgradesRegistryFromConfig(cfg *config.Config) (*UpgradeRegistry, error) {
-	providers := make(map[urproto.ProviderType]provider.UpgradeProvider, 0)
+	providers := make(map[urproto.ProviderType]provider.UpgradeProvider)
 
-	if cfg.UpgradeRegistry.Provider.Chain != nil && slices.Contains(
-		cfg.UpgradeRegistry.SelectedProviders, urproto.ProviderType_name[int32(urproto.ProviderType_CHAIN)],
-	) {
+	isEnabled := func(providerType urproto.ProviderType) bool {
+		name := urproto.ProviderType_name[int32(providerType)]
+		return slices.Contains(cfg.UpgradeRegistry.SelectedProviders, name)
+	}
+
+	if cfg.UpgradeRegistry.Provider.Chain != nil && isEnabled(urproto.ProviderType_CHAIN) {
 		cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create cosmos client")
@@ -90,27 +93,23 @@ func NewUpgradesRegistryFromConfig(cfg *config.Config) (*UpgradeRegistry, error)
 			return nil, errors.Wrapf(err, "failed to start cometbft client")
 		}
 
-		provider := chain.NewProvider(cosmosClient, cfg.UpgradeRegistry.Network, cfg.UpgradeRegistry.Provider.Chain.DefaultPriority)
-		providers[provider.Type()] = provider
+		p := chain.NewProvider(cosmosClient, cfg.UpgradeRegistry.Network, cfg.UpgradeRegistry.Provider.Chain.DefaultPriority)
+		providers[p.Type()] = p
 	}
 
-	if cfg.UpgradeRegistry.Provider.Database != nil && slices.Contains(
-		cfg.UpgradeRegistry.SelectedProviders, urproto.ProviderType_name[int32(urproto.ProviderType_DATABASE)],
-	) {
-		provider, err := database.NewDatabaseProvider(
+	if cfg.UpgradeRegistry.Provider.Database != nil && isEnabled(urproto.ProviderType_DATABASE) {
+		p, err := database.NewDatabaseProvider(
 			cfg.UpgradeRegistry.Provider.Database,
 			cfg.UpgradeRegistry.Network,
 		)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create database provider")
 		}
-		providers[provider.Type()] = provider
+		providers[p.Type()] = p
 	}
 
-	if cfg.UpgradeRegistry.Provider.Local != nil && slices.Contains(
-		cfg.UpgradeRegistry.SelectedProviders, urproto.ProviderType_name[int32(urproto.ProviderType_LOCAL)],
-	) {
-		provider, err := local.NewProvider(
+	if cfg.UpgradeRegistry.Provider.Local != nil && isEnabled(urproto.ProviderType_LOCAL) {
+		p, err := local.NewProvider(
 			cfg.UpgradeRegistry.Provider.Local.ConfigPath,
 			cfg.UpgradeRegistry.Network,
 			cfg.UpgradeRegistry.Provider.Local.DefaultPriority,
@@ -118,7 +117,7 @@ func NewUpgradesRegistryFromConfig(cfg *config.Config) (*UpgradeRegistry, error)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create local provider")
 		}
-		providers[provider.Type()] = provider
+		providers[p.Type()] = p
 	}
 
 	versionProviders := make([]urproto.ProviderType, 0)
@@ -149,8 +148,7 @@ func NewUpgradesRegistryFromConfig(cfg *config.Config) (*UpgradeRegistry, error)
 		stateMachine = state_machine.NewStateMachine(nil)
 	}
 
-	// TODO: context in constructor aint great
-	err := stateMachine.Restore(context.Background())
+	err := stateMachine.Restore()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to restore state machine")
 	}
@@ -206,7 +204,7 @@ func (ur *UpgradeRegistry) GetUpcomingUpgradesWithCache(height int64, allowedSta
 	ur.lock.RLock()
 	defer ur.lock.RUnlock()
 
-	upcomingUpgrades := sortAndfilterUpgradesByStatus(ur.upgrades, ur.stateMachine, height, allowedStatus...)
+	upcomingUpgrades := sortAndFilterUpgradesByStatus(ur.upgrades, ur.stateMachine, height, allowedStatus...)
 
 	return copyList(upcomingUpgrades)
 }
@@ -224,7 +222,7 @@ func (ur *UpgradeRegistry) GetUpcomingUpgrades(ctx context.Context, useCache boo
 		return nil, err
 	}
 
-	return sortAndfilterUpgradesByStatus(resolvedUpgrades, ur.stateMachine, height, allowedStatus...), nil
+	return sortAndFilterUpgradesByStatus(resolvedUpgrades, ur.stateMachine, height, allowedStatus...), nil
 }
 
 func (ur *UpgradeRegistry) GetUpgradeWithCache(height int64) *urproto.Upgrade {
@@ -352,8 +350,8 @@ func (ur *UpgradeRegistry) UpdateVersions(ctx context.Context, commit bool) (map
 		// https://tip.golang.org/doc/go1.22#language
 
 		g.Go(func() error {
-			if provider, ok := ur.providers[providerName].(provider.VersionResolver); ok {
-				versions, err := provider.GetVersions(ctx)
+			if p, ok := ur.providers[providerName].(provider.VersionResolver); ok {
+				versions, err := p.GetVersions(ctx)
 				if err != nil {
 					return errors.Wrapf(err, "%s provider failed to fetch versions", providerName)
 				}
@@ -395,7 +393,7 @@ func (ur *UpgradeRegistry) UpdateUpgrades(ctx context.Context, currentHeight int
 	results := make([][]*urproto.Upgrade, len(ur.providers))
 
 	i := 0
-	for _, provider := range ur.providers {
+	for _, p := range ur.providers {
 		// from go 1.22 the copy of the loop variable (provider) is not needed anymore
 		// https://tip.golang.org/doc/go1.22#language
 		//
@@ -404,13 +402,13 @@ func (ur *UpgradeRegistry) UpdateUpgrades(ctx context.Context, currentHeight int
 		ii := i
 
 		g.Go(func() error {
-			upgrades, err := provider.GetUpgrades(ctx)
+			upgrades, err := p.GetUpgrades(ctx)
 			if err != nil {
-				return errors.Wrapf(err, "%s provider failed to fetch upgrades", provider.Type())
+				return errors.Wrapf(err, "%s provider failed to fetch upgrades", p.Type())
 			}
 
-			if err := checkDuplicates(upgrades, provider.Type()); err != nil {
-				return errors.Wrapf(err, "%s provider returned duplicate upgrades", provider.Type())
+			if err := checkDuplicates(upgrades, p.Type()); err != nil {
+				return errors.Wrapf(err, "%s provider returned duplicate upgrades", p.Type())
 			}
 
 			results[ii] = upgrades
@@ -523,7 +521,7 @@ func (ur *UpgradeRegistry) AddUpgrade(ctx context.Context, upgrade *urproto.Upgr
 	ur.lock.RLock()
 	defer ur.lock.RUnlock()
 
-	// The use case for cancelled status is for user to create and upgrade with higher proiority to cancel the existing upgrade
+	// The use case for cancelled status is for user to create and upgrade with higher priority to cancel the existing upgrade
 	if upgrade.Status != urproto.UpgradeStatus_UNKNOWN && upgrade.Status != urproto.UpgradeStatus_CANCELLED {
 		return errors.New("status is not allowed to be set manually")
 	}
@@ -537,15 +535,15 @@ func (ur *UpgradeRegistry) AddUpgrade(ctx context.Context, upgrade *urproto.Upgr
 		return errors.New("add upgrade is not supported for chain provider")
 
 	case urproto.ProviderType_DATABASE:
-		if provider, ok := ur.providers[urproto.ProviderType_DATABASE]; ok {
-			return provider.AddUpgrade(ctx, upgrade, overwrite)
+		if p, ok := ur.providers[urproto.ProviderType_DATABASE]; ok {
+			return p.AddUpgrade(ctx, upgrade, overwrite)
 		} else {
 			return errors.New("database provider is not configured")
 		}
 
 	case urproto.ProviderType_LOCAL:
-		if provider, ok := ur.providers[urproto.ProviderType_LOCAL]; ok {
-			return provider.AddUpgrade(ctx, upgrade, overwrite)
+		if p, ok := ur.providers[urproto.ProviderType_LOCAL]; ok {
+			return p.AddUpgrade(ctx, upgrade, overwrite)
 		} else {
 			return errors.New("local provider is not configured")
 		}
@@ -614,7 +612,7 @@ func checkDuplicates[T interface {
 	return nil
 }
 
-func sortAndfilterUpgradesByStatus(upgrades map[int64]*urproto.Upgrade, sm *state_machine.StateMachine, height int64, allowedStatus ...urproto.UpgradeStatus) []*urproto.Upgrade {
+func sortAndFilterUpgradesByStatus(upgrades map[int64]*urproto.Upgrade, sm *state_machine.StateMachine, height int64, allowedStatus ...urproto.UpgradeStatus) []*urproto.Upgrade {
 	upcomingUpgrades := make([]*urproto.Upgrade, 0)
 	for _, upgrade := range upgrades {
 		currentStatus := sm.GetStatus(upgrade.Height)
