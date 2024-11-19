@@ -15,7 +15,7 @@ const (
 
 type Metrics struct {
 	Up              prometheus.Gauge
-	State           *prometheus.GaugeVec
+	Step            *prometheus.GaugeVec
 	BlocksToUpgrade *prometheus.GaugeVec
 	UpwErrs         prometheus.Counter
 	UiwErrs         prometheus.Counter
@@ -35,11 +35,11 @@ func NewMetrics(composeFile string, hostname string, version string) (*Metrics, 
 				ConstLabels: labels,
 			},
 		),
-		State: promauto.NewGaugeVec(
+		Step: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace:   namespace,
-				Name:        "upgrade_state",
-				Help:        "ID of the current stage of the upgrade process",
+				Name:        "upgrade_step",
+				Help:        "ID of the current step of the upgrade process",
 				ConstLabels: labels,
 			},
 			[]string{"upgrade_height", "upgrade_name", "proposal_status"},
