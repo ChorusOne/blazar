@@ -42,7 +42,7 @@ func NewMetrics(composeFile string, hostname string, version string) (*Metrics, 
 				Help:        "ID of the current step of the upgrade process",
 				ConstLabels: labels,
 			},
-			[]string{"upgrade_height", "upgrade_name", "proposal_status"},
+			[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
 		),
 		BlocksToUpgrade: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -51,7 +51,7 @@ func NewMetrics(composeFile string, hostname string, version string) (*Metrics, 
 				Help:        "Number of blocks to the upgrade height",
 				ConstLabels: labels,
 			},
-			[]string{"upgrade_height", "upgrade_name", "proposal_status"},
+			[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
 		),
 		UpwErrs: promauto.NewCounter(
 			prometheus.CounterOpts{
