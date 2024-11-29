@@ -86,6 +86,29 @@ func (p *Provider) GetUpgrades(ctx context.Context) ([]*urproto.Upgrade, error) 
 		}
 	}
 
+	// If multiple passed upgrade proposals are in the "passed" state,
+	// the cosmos upgrade handler only treats the one with the highest proposal ID
+	// as "passed" and all other passed proposals as "cancelled".
+	// This is not to be confused with the code above, which handles the
+	// case where multiple upgrade proposals exist for the same upgrade height
+	// https://github.com/cosmos/cosmos-sdk/blob/f007a4ea0711da2bac20afc6283885c1b2496ae5/x/upgrade/keeper/keeper.go#L189-L193
+	latestPassedProposal := uint64(0)
+	isAnyProposalPassed := false
+	for _, upgrade := range filtered {
+		if upgrade.Status == PASSED {
+			latestPassedProposal = max(latestPassedProposal, upgrade.ProposalID)
+			isAnyProposalPassed = true
+		}
+	}
+
+	if isAnyProposalPassed {
+		for i := range filtered {
+			if filtered[i].Status == PASSED && filtered[i].ProposalID < latestPassedProposal {
+				filtered[i].Status = CANCELLED
+			}
+		}
+	}
+
 	// sort upgrades in descending order by proposal id because iterating over map doesn't guarantee order
 	sort.Slice(filtered, func(i, j int) bool {
 		return filtered[i].ProposalID > filtered[j].ProposalID

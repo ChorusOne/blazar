@@ -21,6 +21,7 @@ const (
 	PASSED         ProposalStatus = 3
 	REJECTED       ProposalStatus = 4
 	FAILED         ProposalStatus = 5
+	CANCELLED      ProposalStatus = 6
 )
 
 func (ps ProposalStatus) String() string {
@@ -39,6 +40,8 @@ func (ps ProposalStatus) String() string {
 		return "REJECTED"
 	case FAILED:
 		return "FAILED"
+	case CANCELLED:
+		return "CANCELLED"
 	default:
 		return fmt.Sprintf("%d", int(ps))
 	}
@@ -69,6 +72,8 @@ func (cu chainUpgrade) ToProto() urproto.Upgrade {
 	case REJECTED:
 		upgradeStatus = urproto.UpgradeStatus_CANCELLED
 	case FAILED:
+		upgradeStatus = urproto.UpgradeStatus_CANCELLED
+	case CANCELLED:
 		upgradeStatus = urproto.UpgradeStatus_CANCELLED
 	}
 
