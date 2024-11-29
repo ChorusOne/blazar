@@ -62,17 +62,38 @@ func TestGetUpgrades(t *testing.T) {
 			},
 		},
 		{
-			name: "DuplicateProposalsWithPassedStatus",
+			name: "MultiplePassed",
 			proposals: v1.Proposals{
 				newProposal(t, 1, 100, v1.StatusPassed),
-				newProposal(t, 2, 100, v1.StatusPassed),
-				newProposal(t, 3, 200, v1.StatusPassed),
+				newProposal(t, 2, 200, v1.StatusPassed),
 			},
 			expected: []*urproto.Upgrade{
 				{
 					Height: 200,
 					Type:   urproto.UpgradeType_GOVERNANCE,
 					Status: urproto.UpgradeStatus_ACTIVE,
+					Source: urproto.ProviderType_CHAIN,
+				},
+				{
+					Height: 100,
+					Type:   urproto.UpgradeType_GOVERNANCE,
+					Status: urproto.UpgradeStatus_CANCELLED,
+					Source: urproto.ProviderType_CHAIN,
+				},
+			},
+		},
+		{
+			name: "DuplicateProposalsWithPassedStatus",
+			proposals: v1.Proposals{
+				newProposal(t, 1, 100, v1.StatusPassed),
+				newProposal(t, 2, 100, v1.StatusPassed),
+				newProposal(t, 3, 200, v1.StatusDepositPeriod),
+			},
+			expected: []*urproto.Upgrade{
+				{
+					Height: 200,
+					Type:   urproto.UpgradeType_GOVERNANCE,
+					Status: urproto.UpgradeStatus_SCHEDULED,
 					Source: urproto.ProviderType_CHAIN,
 				},
 				{
