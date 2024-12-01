@@ -1,7 +1,6 @@
 package state_machine
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"sync"
@@ -10,7 +9,7 @@ import (
 	urproto "blazar/internal/pkg/proto/upgrades_registry"
 )
 
-// The rule are are as follows:
+// The rule are as follows:
 // 1. upgrades coming from the providers have one of the following statuses (`upgrade.Status`)
 //   - UNKNOWN
 //   - SCHEDULED
@@ -44,8 +43,8 @@ func init() {
 }
 
 type StateMachineStorage interface {
-	StoreState(context.Context, *State) error
-	RestoreState(context.Context) (*State, error)
+	StoreState(*State) error
+	RestoreState() (*State, error)
 }
 
 type State struct {
@@ -56,7 +55,7 @@ type State struct {
 	PostCheckStatus map[int64]map[checksproto.PostCheck]checksproto.CheckStatus `json:"post_check_status"`
 }
 
-// Simple, unsphisitcated state machine for managing upgrades
+// StateMachine a simple unsophisticated state machine for managing upgrades
 type StateMachine struct {
 	lock  *sync.RWMutex
 	state *State
@@ -272,13 +271,13 @@ func (sm *StateMachine) GetPostCheckStatus(height int64, check checksproto.PostC
 	return checksproto.CheckStatus_PENDING
 }
 
-func (sm *StateMachine) Restore(ctx context.Context) error {
+func (sm *StateMachine) Restore() error {
 	if sm.storage == nil {
 		// if it wasn't configured then we don't need to restore the state
 		return nil
 	}
 
-	state, err := sm.storage.RestoreState(ctx)
+	state, err := sm.storage.RestoreState()
 	if err != nil {
 		return err
 	}
@@ -358,6 +357,6 @@ func (sm *StateMachine) persist() {
 	// TODO: For now we ignore writing to the storage errors because this is not a critical operation
 	// NOTE: The caller must hold the lock
 	if sm.storage != nil {
-		_ = sm.storage.StoreState(context.TODO(), sm.state)
+		_ = sm.storage.StoreState(sm.state)
 	}
 }
