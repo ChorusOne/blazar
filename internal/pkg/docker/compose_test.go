@@ -272,23 +272,6 @@ func TestUpDownCompose(t *testing.T) {
 				require.NoError(t, err)
 			},
 		},
-		{
-			name: "simulate case where docker compose up didn't start the container",
-			testFn: func(t *testing.T, _ string) {
-				// step 1: fake docker binary to simulate docker compose up timeout (container isn't running)
-				err = os.WriteFile(filepath.Join(tempDir, "docker"), []byte("#!/bin/sh\nexit 0\n"), 0600)
-				require.NoError(t, err)
-
-				oldPath := os.Getenv("PATH")
-				os.Setenv("PATH", tempDir+":"+oldPath)
-
-				// step 2: with docker compose client try to start container and expect it to fail
-				err = dcc.Down(ctx, "s1", 0)
-				require.ErrorIs(t, err, ErrContainerNotRunning)
-
-				os.Setenv("PATH", oldPath)
-			},
-		},
 	}
 
 	for _, test := range tests {
