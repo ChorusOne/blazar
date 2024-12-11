@@ -479,6 +479,10 @@ func (d *Daemon) performUpgrade(
 		return errors.Wrapf(err, "failed to check if service is running")
 	}
 
+	// This check is prone to race conditions, the image could be up at this point
+	// but exits before dcc.Down is called. However, at this point we are certain
+	// that upgrade height has been hit, so, it should be safe to Down an exited
+	// container.
 	if isRunning {
 		logger.Info("Executing compose down").Notifyf(ctx, "Shutting down chain to perform upgrade. Current image: %s, new image: %s", currImage, newImage)
 		if err = d.dcc.Down(ctx, serviceName, compose.DownTimeout); err != nil {

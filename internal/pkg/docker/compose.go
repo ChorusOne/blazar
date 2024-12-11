@@ -182,26 +182,18 @@ func (dcc *ComposeClient) upgradeImageInComposeFile(ctx context.Context, service
 }
 
 func (dcc *ComposeClient) Down(ctx context.Context, serviceName string, timeout time.Duration) error {
-	isImageContainerRunning, err := dcc.IsServiceRunning(ctx, serviceName, timeout)
-	if err != nil {
-		return errors.Wrapf(err, "check for container running failed")
-	}
-	if !isImageContainerRunning {
-		return errors.Wrapf(ErrContainerNotRunning, "expected the container to run before calling docker compose down")
-	}
-
 	// 5 seconds buffer to handle the case when docker timeout (-t)
 	// takes slightly longer than defined timeout (thus delay context cancellation)
 	deadline := timeout + 5*time.Second
 	timeoutSeconds := int(math.Round(timeout.Seconds()))
 
-	err = cmd.ExecuteWithDeadlineAndLog(ctx, deadline, []string{}, "docker", "compose", "-f", dcc.composeFile, "down", "--remove-orphans", "-t", strconv.Itoa(timeoutSeconds))
+	err := cmd.ExecuteWithDeadlineAndLog(ctx, deadline, []string{}, "docker", "compose", "-f", dcc.composeFile, "down", "--remove-orphans", "-t", strconv.Itoa(timeoutSeconds))
 	if err != nil {
 		return errors.Wrapf(err, "docker compose down failed")
 	}
 
 	// verify from docker api that the container is down
-	isImageContainerRunning, err = dcc.IsServiceRunning(ctx, serviceName, timeout)
+	isImageContainerRunning, err := dcc.IsServiceRunning(ctx, serviceName, timeout)
 	if err != nil {
 		return errors.Wrapf(err, "check for container running failed")
 	}
@@ -243,7 +235,20 @@ func (dcc *ComposeClient) Up(ctx context.Context, serviceName string, timeout ti
 }
 
 func (dcc *ComposeClient) RestartServiceWithHaltHeight(ctx context.Context, composeConfig *config.ComposeCli, serviceName string, upgradeHeight int64) error {
-	err := dcc.Down(ctx, serviceName, composeConfig.DownTimeout)
+	isImageContainerRunning, err := dcc.IsServiceRunning(ctx, serviceName, composeConfig.DownTimeout)
+	if err != nil {
+		return errors.Wrapf(err, "check for container running failed")
+	}
+	if !isImageContainerRunning {
+		return errors.Wrapf(ErrContainerNotRunning, "expected the container to run before restarting with halt height")
+	}
+	// The check above is prone to race conditions and the
+	// container can exit after the check. That should be super rare
+	// and it should be safe to Down it anyways, since, we are sure that we want
+	// to register halt height and restart.
+	// If the container crashed due to some issue, let it crash again after the restart
+	// blazar can't do anything about that
+	err = dcc.Down(ctx, serviceName, composeConfig.DownTimeout)
 	if err != nil && !errors.Is(err, ErrContainerNotRunning) {
 		return errors.Wrapf(err, "docker compose down failed")
 	}
