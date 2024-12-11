@@ -23,7 +23,7 @@ type Metrics struct {
 	NotifErrs       prometheus.Counter
 }
 
-func NewMetrics(composeFile string, hostname string, version string) (*Metrics, error) {
+func NewMetrics(composeFile, hostname, version string) *Metrics {
 	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version}
 
 	metrics := &Metrics{
@@ -35,24 +35,9 @@ func NewMetrics(composeFile string, hostname string, version string) (*Metrics, 
 				ConstLabels: labels,
 			},
 		),
-		Step: promauto.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace:   namespace,
-				Name:        "upgrade_step",
-				Help:        "ID of the current step of the upgrade process",
-				ConstLabels: labels,
-			},
-			[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
-		),
-		BlocksToUpgrade: promauto.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace:   namespace,
-				Name:        "blocks_to_upgrade_height",
-				Help:        "Number of blocks to the upgrade height",
-				ConstLabels: labels,
-			},
-			[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
-		),
+		// Filled by RegisterValidatorInfoMetrics
+		Step:            nil,
+		BlocksToUpgrade: nil,
 		UpwErrs: promauto.NewCounter(
 			prometheus.CounterOpts{
 				Namespace:   namespace,
@@ -87,7 +72,29 @@ func NewMetrics(composeFile string, hostname string, version string) (*Metrics, 
 		),
 	}
 
-	return metrics, nil
+	return metrics
+}
+
+func (m *Metrics) RegisterValidatorInfoMetrics(composeFile, hostname, version, validator_address string) {
+	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version, "validator_address": validator_address}
+	m.Step = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   namespace,
+			Name:        "upgrade_step",
+			Help:        "ID of the current step of the upgrade process",
+			ConstLabels: labels,
+		},
+		[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
+	)
+	m.BlocksToUpgrade = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   namespace,
+			Name:        "blocks_to_upgrade_height",
+			Help:        "Number of blocks to the upgrade height",
+			ConstLabels: labels,
+		},
+		[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
+	)
 }
 
 func RegisterHandler(mux *runtime.ServeMux) error {

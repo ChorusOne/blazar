@@ -14,6 +14,7 @@ import (
 	"blazar/internal/pkg/config"
 	"blazar/internal/pkg/cosmos"
 	"blazar/internal/pkg/daemon/checks"
+	"blazar/internal/pkg/daemon/util"
 	"blazar/internal/pkg/docker"
 	"blazar/internal/pkg/errors"
 	"blazar/internal/pkg/log"
@@ -107,7 +108,7 @@ func NewDaemon(ctx context.Context, cfg *config.Config, m *metrics.Metrics) (*Da
 	}, nil
 }
 
-func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
+func (d *Daemon) Init(ctx context.Context, cfg *config.Config, version string) error {
 	logger := log.FromContext(ctx).With("package", "daemon")
 	logger.Info("Starting up blazar daemon...")
 
@@ -130,6 +131,9 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to get status response")
 	}
+
+	hostname := util.GetHostname()
+	d.metrics.RegisterValidatorInfoMetrics(cfg.ComposeFile, hostname, version, status.ValidatorInfo.Address.String())
 
 	// display information about the node
 	d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)
