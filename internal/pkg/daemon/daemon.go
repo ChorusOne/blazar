@@ -53,7 +53,7 @@ type Daemon struct {
 	nodeAddress      bytes.HexBytes
 	nodeInfo         *tmservice.GetNodeInfoResponse
 	validatorAddress string
-	chainId          string
+	chainID          string
 
 	// tracking current height
 	currHeight          int64
@@ -135,7 +135,7 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to get status response")
 	}
 
-	d.chainId = status.NodeInfo.Network
+	d.chainID = status.NodeInfo.Network
 	d.validatorAddress = status.ValidatorInfo.Address.String()
 
 	// display information about the node

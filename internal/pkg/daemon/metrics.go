@@ -14,6 +14,6 @@ func (d *Daemon) updateMetrics() {
 		status := d.stateMachine.GetStatus(upgrade.Height)
 
 		d.metrics.BlocksToUpgrade.WithLabelValues(upgradeHeight, upgrade.Name, status.String(),
-			d.stateMachine.GetStep(upgrade.Height).String(), d.chainId, d.validatorAddress).Set(float64(upgrade.Height - d.currHeight))
+			d.stateMachine.GetStep(upgrade.Height).String(), d.chainID, d.validatorAddress).Set(float64(upgrade.Height - d.currHeight))
 	}
 }
