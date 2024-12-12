@@ -53,7 +53,7 @@ var runCmd = &cobra.Command{
 		ctx := notification.WithContextFallback(cmd.Context(), notifier)
 
 		// initialize daemon (fetch initial state and run basic sanity checks)
-		if err := d.Init(ctx, cfg, BinVersion); err != nil {
+		if err := d.Init(ctx, cfg); err != nil {
 			return errors.Wrapf(err, "failed to initialize daemon")
 		}
 

@@ -48,9 +48,9 @@ type Daemon struct {
 
 	// initial counters
 	startupHeight int64
-	nodeAddress   bytes.HexBytes
 
 	// node information
+	nodeAddress      bytes.HexBytes
 	nodeInfo         *tmservice.GetNodeInfoResponse
 	validatorAddress string
 	chainId          string
@@ -111,7 +111,7 @@ func NewDaemon(ctx context.Context, cfg *config.Config, m *metrics.Metrics) (*Da
 	}, nil
 }
 
-func (d *Daemon) Init(ctx context.Context, cfg *config.Config, version string) error {
+func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 	logger := log.FromContext(ctx).With("package", "daemon")
 	logger.Info("Starting up blazar daemon...")
 
