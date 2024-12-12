@@ -14,7 +14,6 @@ import (
 	"blazar/internal/pkg/config"
 	"blazar/internal/pkg/cosmos"
 	"blazar/internal/pkg/daemon/checks"
-	"blazar/internal/pkg/daemon/util"
 	"blazar/internal/pkg/docker"
 	"blazar/internal/pkg/errors"
 	"blazar/internal/pkg/log"
@@ -50,7 +49,11 @@ type Daemon struct {
 	// initial counters
 	startupHeight int64
 	nodeAddress   bytes.HexBytes
-	nodeInfo      *tmservice.GetNodeInfoResponse
+
+	// node information
+	nodeInfo         *tmservice.GetNodeInfoResponse
+	validatorAddress string
+	chainId          string
 
 	// tracking current height
 	currHeight          int64
@@ -132,8 +135,8 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config, version string) e
 		return errors.Wrapf(err, "failed to get status response")
 	}
 
-	hostname := util.GetHostname()
-	d.metrics.RegisterValidatorInfoMetrics(cfg.ComposeFile, hostname, version, status.NodeInfo.Network, status.ValidatorInfo.Address.String())
+	d.chainId = status.NodeInfo.Network
+	d.validatorAddress = status.ValidatorInfo.Address.String()
 
 	// display information about the node
 	d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)

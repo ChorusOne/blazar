@@ -15,7 +15,6 @@ const (
 
 type Metrics struct {
 	Up              prometheus.Gauge
-	Step            *prometheus.GaugeVec
 	BlocksToUpgrade *prometheus.GaugeVec
 	UpwErrs         prometheus.Counter
 	UiwErrs         prometheus.Counter
@@ -35,9 +34,15 @@ func NewMetrics(composeFile, hostname, version string) *Metrics {
 				ConstLabels: labels,
 			},
 		),
-		// Filled by RegisterValidatorInfoMetrics
-		Step:            nil,
-		BlocksToUpgrade: nil,
+		BlocksToUpgrade: promauto.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace:   namespace,
+				Name:        "blocks_to_upgrade_height",
+				Help:        "Number of blocks to the upgrade height",
+				ConstLabels: labels,
+			},
+			[]string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "chain_id", "validator_address"},
+		),
 		UpwErrs: promauto.NewCounter(
 			prometheus.CounterOpts{
 				Namespace:   namespace,
@@ -73,28 +78,6 @@ func NewMetrics(composeFile, hostname, version string) *Metrics {
 	}
 
 	return metrics
-}
-
-func (m *Metrics) RegisterValidatorInfoMetrics(composeFile, hostname, version, chain_id, validator_address string) {
-	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version, "chain_id": chain_id, "validator_address": validator_address}
-	m.Step = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace:   namespace,
-			Name:        "upgrade_step",
-			Help:        "ID of the current step of the upgrade process",
-			ConstLabels: labels,
-		},
-		[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
-	)
-	m.BlocksToUpgrade = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace:   namespace,
-			Name:        "blocks_to_upgrade_height",
-			Help:        "Number of blocks to the upgrade height",
-			ConstLabels: labels,
-		},
-		[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
-	)
 }
 
 func RegisterHandler(mux *runtime.ServeMux) error {
