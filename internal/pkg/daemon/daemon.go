@@ -133,7 +133,7 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config, version string) e
 	}
 
 	hostname := util.GetHostname()
-	d.metrics.RegisterValidatorInfoMetrics(cfg.ComposeFile, hostname, version, status.ValidatorInfo.Address.String())
+	d.metrics.RegisterValidatorInfoMetrics(cfg.ComposeFile, hostname, version, status.NodeInfo.Network, status.ValidatorInfo.Address.String())
 
 	// display information about the node
 	d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)

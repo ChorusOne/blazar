@@ -75,8 +75,8 @@ func NewMetrics(composeFile, hostname, version string) *Metrics {
 	return metrics
 }
 
-func (m *Metrics) RegisterValidatorInfoMetrics(composeFile, hostname, version, validator_address string) {
-	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version, "validator_address": validator_address}
+func (m *Metrics) RegisterValidatorInfoMetrics(composeFile, hostname, version, chain_id, validator_address string) {
+	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version, "chain_id": chain_id, "validator_address": validator_address}
 	m.Step = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace:   namespace,
