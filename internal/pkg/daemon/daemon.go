@@ -48,8 +48,12 @@ type Daemon struct {
 
 	// initial counters
 	startupHeight int64
-	nodeAddress   bytes.HexBytes
-	nodeInfo      *tmservice.GetNodeInfoResponse
+
+	// node information
+	nodeAddress      bytes.HexBytes
+	nodeInfo         *tmservice.GetNodeInfoResponse
+	validatorAddress string
+	chainID          string
 
 	// tracking current height
 	currHeight          int64
@@ -130,6 +134,9 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to get status response")
 	}
+
+	d.chainID = status.NodeInfo.Network
+	d.validatorAddress = status.ValidatorInfo.Address.String()
 
 	// display information about the node
 	d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)

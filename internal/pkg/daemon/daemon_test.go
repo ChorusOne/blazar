@@ -75,8 +75,7 @@ func TestIntegrationDaemon(t *testing.T) {
 	}()
 
 	// we can't register 2 metrics, but this sharing this should probably cause no problems
-	metrics, err := metrics.NewMetrics("/path/to/docker-compose.yml", "dummy", "test")
-	require.NoError(t, err)
+	metrics := metrics.NewMetrics("/path/to/docker-compose.yml", "dummy", "test")
 
 	ports := getFreePorts(t, 6)
 

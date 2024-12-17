@@ -15,7 +15,6 @@ const (
 
 type Metrics struct {
 	Up              prometheus.Gauge
-	Step            *prometheus.GaugeVec
 	BlocksToUpgrade *prometheus.GaugeVec
 	UpwErrs         prometheus.Counter
 	UiwErrs         prometheus.Counter
@@ -23,7 +22,7 @@ type Metrics struct {
 	NotifErrs       prometheus.Counter
 }
 
-func NewMetrics(composeFile string, hostname string, version string) (*Metrics, error) {
+func NewMetrics(composeFile, hostname, version string) *Metrics {
 	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version}
 
 	metrics := &Metrics{
@@ -35,15 +34,6 @@ func NewMetrics(composeFile string, hostname string, version string) (*Metrics, 
 				ConstLabels: labels,
 			},
 		),
-		Step: promauto.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace:   namespace,
-				Name:        "upgrade_step",
-				Help:        "ID of the current step of the upgrade process",
-				ConstLabels: labels,
-			},
-			[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
-		),
 		BlocksToUpgrade: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace:   namespace,
@@ -51,7 +41,7 @@ func NewMetrics(composeFile string, hostname string, version string) (*Metrics, 
 				Help:        "Number of blocks to the upgrade height",
 				ConstLabels: labels,
 			},
-			[]string{"upgrade_height", "upgrade_name", "upgrade_status"},
+			[]string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "chain_id", "validator_address"},
 		),
 		UpwErrs: promauto.NewCounter(
 			prometheus.CounterOpts{
@@ -87,7 +77,7 @@ func NewMetrics(composeFile string, hostname string, version string) (*Metrics, 
 		),
 	}
 
-	return metrics, nil
+	return metrics
 }
 
 func RegisterHandler(mux *runtime.ServeMux) error {

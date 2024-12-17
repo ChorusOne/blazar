@@ -34,10 +34,7 @@ var runCmd = &cobra.Command{
 
 		// setup metrics
 		hostname := util.GetHostname()
-		metrics, err := metrics.NewMetrics(cfg.ComposeFile, hostname, BinVersion)
-		if err != nil {
-			return errors.Wrapf(err, "error creating metrics server")
-		}
+		metrics := metrics.NewMetrics(cfg.ComposeFile, hostname, BinVersion)
 
 		// setup notifier
 		notifier := notification.NewFallbackNotifier(cfg, metrics, lg, hostname)
