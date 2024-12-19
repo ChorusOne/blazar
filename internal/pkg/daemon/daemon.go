@@ -450,11 +450,17 @@ func (d *Daemon) performUpgrade(
 
 	d.stateMachine.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_EXECUTING)
 
+	logger := log.FromContext(ctx)
+
+	logger.Infof("Upgrade height %d has been detected, performing upgrade", upgradeHeight).Notify(ctx)
+
 	// ensure the upgrade is still valid
 	upgrade := d.ur.GetUpgradeWithCache(upgradeHeight)
 	if upgrade == nil {
 		return fmt.Errorf("upgrade with height %d not found", upgradeHeight)
 	}
+
+	logger.Infof("Upgrade provided to blazar by %s provider\nType: %s\nTag: %s\nName: %s", upgrade.Source.String(), upgrade.Type.String(), upgrade.Tag, upgrade.Name).Notify(ctx)
 
 	// sanity check to ensure we are not performing upgrades at wrong times
 	if upgradeHeight < d.currHeight {
@@ -468,9 +474,7 @@ func (d *Daemon) performUpgrade(
 		return err
 	}
 
-	logger := log.FromContext(ctx)
-
-	logger.Infof("Current image: %s. New image: %s found on the host", currImage, newImage)
+	logger.Infof("Current image: %s. New image: %s found on the host", currImage, newImage).Notify(ctx)
 	d.stateMachine.MustSetStatusAndStep(upgradeHeight, urproto.UpgradeStatus_EXECUTING, urproto.UpgradeStep_COMPOSE_FILE_UPGRADE)
 
 	// take container down or check if it is down already
@@ -484,18 +488,19 @@ func (d *Daemon) performUpgrade(
 	// that upgrade height has been hit, so, it should be safe to Down an exited
 	// container.
 	if isRunning {
-		logger.Info("Executing compose down").Notifyf(ctx, "Shutting down chain to perform upgrade. Current image: %s, new image: %s", currImage, newImage)
+		logger.Info("Executing compose down").Notify(ctx)
 		if err = d.dcc.Down(ctx, serviceName, compose.DownTimeout); err != nil {
 			return errors.Wrapf(err, "failed to down compose")
 		}
 	}
 
-	logger.Info("Changing image in compose file")
+	logger.Info("Changing image in compose file").Notify(ctx)
 	if err = d.dcc.UpgradeImage(ctx, serviceName, upgrade.Tag); err != nil {
 		return errors.Wrapf(err, "failed to upgrade image")
 	}
 
-	logger.Info("Executing compose up")
+	logger.Info("Executing compose up").Notify(ctx)
+
 	if err = d.dcc.Up(ctx, serviceName, compose.UpDeadline); err != nil {
 		return errors.Wrapf(err, "failed to up compose")
 	}
