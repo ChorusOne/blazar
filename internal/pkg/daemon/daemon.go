@@ -349,6 +349,7 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 				logger.Err(err).Error("Error received from HeightWatcher")
 				continue
 			}
+			d.metrics.LastObservedHeight.Set(float64(newHeight.Height))
 			currBlockHeight := newHeight.Height
 			lastBlockHeight := d.currHeight
 

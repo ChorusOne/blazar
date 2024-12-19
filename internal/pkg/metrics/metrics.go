@@ -14,12 +14,13 @@ const (
 )
 
 type Metrics struct {
-	Up              prometheus.Gauge
-	BlocksToUpgrade *prometheus.GaugeVec
-	UpwErrs         prometheus.Counter
-	UiwErrs         prometheus.Counter
-	HwErrs          prometheus.Counter
-	NotifErrs       prometheus.Counter
+	Up                 prometheus.Gauge
+	BlocksToUpgrade    *prometheus.GaugeVec
+	LastObservedHeight prometheus.Gauge
+	UpwErrs            prometheus.Counter
+	UiwErrs            prometheus.Counter
+	HwErrs             prometheus.Counter
+	NotifErrs          prometheus.Counter
 }
 
 func NewMetrics(composeFile, hostname, version string) *Metrics {
@@ -42,6 +43,14 @@ func NewMetrics(composeFile, hostname, version string) *Metrics {
 				ConstLabels: labels,
 			},
 			[]string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "chain_id", "validator_address"},
+		),
+		LastObservedHeight: promauto.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace:   namespace,
+				Name:        "last_observed_height",
+				Help:        "Last block height observed by the height watcher",
+				ConstLabels: labels,
+			},
 		),
 		UpwErrs: promauto.NewCounter(
 			prometheus.CounterOpts{
