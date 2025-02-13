@@ -310,8 +310,7 @@ func (d *Daemon) Run(ctx context.Context, cfg *config.Config) error {
 		}
 
 		// step 3: mark upgrade as completed
-		d.stateMachine.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_COMPLETED)
-		d.updateMetrics()
+		d.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_COMPLETED)
 	}
 }
 
@@ -381,17 +380,15 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 
 				// let the user know that blazar sees the upcoming upgrade
 				if d.stateMachine.GetStep(futureUpgrade.Height) == urproto.UpgradeStep_NONE {
-					d.stateMachine.SetStep(futureUpgrade.Height, urproto.UpgradeStep_MONITORING)
-					d.updateMetrics()
+					d.SetStep(futureUpgrade.Height, urproto.UpgradeStep_MONITORING)
 				}
 
 				// perform pre upgrade upgrade checks if we are close to the upgrade height
 				if futureUpgrade.Height < d.currHeight+cfg.Checks.PreUpgrade.Blocks {
 					newHeight, preErr := d.preUpgradeChecks(ctx, d.currHeight, d.stateMachine, d.dcc, &cfg.Compose, &cfg.Checks.PreUpgrade, cfg.ComposeService, futureUpgrade)
 					if preErr != nil {
-						d.stateMachine.MustSetStatus(futureUpgrade.Height, urproto.UpgradeStatus_FAILED)
+						d.MustSetStatus(futureUpgrade.Height, urproto.UpgradeStatus_FAILED)
 					}
-					d.updateMetrics()
 
 					// cheat and update the height if we have a new height
 					if newHeight != 0 {
@@ -445,14 +442,12 @@ func (d *Daemon) performUpgrade(
 	defer func() {
 		// ensure we update the status to failed if any error was encountered
 		if err != nil {
-			d.stateMachine.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_FAILED)
-			d.updateMetrics()
+			d.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_FAILED)
 		}
 	}()
 	ctx = notification.WithUpgradeHeight(ctx, upgradeHeight)
 
-	d.stateMachine.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_EXECUTING)
-	d.updateMetrics()
+	d.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_EXECUTING)
 
 	logger := log.FromContext(ctx)
 
@@ -479,8 +474,7 @@ func (d *Daemon) performUpgrade(
 	}
 
 	logger.Infof("Current image: %s. New image: %s found on the host", currImage, newImage).Notify(ctx)
-	d.stateMachine.MustSetStatusAndStep(upgradeHeight, urproto.UpgradeStatus_EXECUTING, urproto.UpgradeStep_COMPOSE_FILE_UPGRADE)
-	d.updateMetrics()
+	d.MustSetStatusAndStep(upgradeHeight, urproto.UpgradeStatus_EXECUTING, urproto.UpgradeStep_COMPOSE_FILE_UPGRADE)
 
 	// take container down or check if it is down already
 	isRunning, err := d.dcc.IsServiceRunning(ctx, serviceName, compose.DownTimeout)
