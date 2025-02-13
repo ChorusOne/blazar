@@ -2,8 +2,34 @@ package daemon
 
 import (
 	checksproto "blazar/internal/pkg/proto/daemon"
+	urproto "blazar/internal/pkg/proto/upgrades_registry"
 	"strconv"
 )
+
+func (d *Daemon) MustSetStatus(height int64, status urproto.UpgradeStatus) {
+	d.stateMachine.MustSetStatus(height, status)
+	d.updateMetrics()
+}
+
+func (d *Daemon) SetStep(height int64, step urproto.UpgradeStep) {
+	d.stateMachine.SetStep(height, step)
+	d.updateMetrics()
+}
+
+func (d *Daemon) MustSetStatusAndStep(height int64, status urproto.UpgradeStatus, step urproto.UpgradeStep) {
+	d.stateMachine.MustSetStatusAndStep(height, status, step)
+	d.updateMetrics()
+}
+
+func (d *Daemon) SetPreCheckStatus(height int64, check checksproto.PreCheck, status checksproto.CheckStatus) {
+	d.stateMachine.SetPreCheckStatus(height, check, status)
+	d.updateMetrics()
+}
+
+func (d *Daemon) SetPostCheckStatus(height int64, check checksproto.PostCheck, status checksproto.CheckStatus) {
+	d.stateMachine.SetPostCheckStatus(height, check, status)
+	d.updateMetrics()
+}
 
 func (d *Daemon) updateMetrics() {
 	// the upgrade state may change, we don't want to persist the metric with the old status

@@ -60,8 +60,7 @@ func (d *Daemon) preUpgradeChecks(
 		//
 		// Example: Pre-check failed because network operator didn't register an image tag yet. He'll do it in next 100 blocks,
 		// but if the status is FAILED the operator can't do anyting.
-		d.stateMachine.MustSetStatusAndStep(upgrade.Height, urproto.UpgradeStatus_ACTIVE, urproto.UpgradeStep_PRE_UPGRADE_CHECK)
-		d.updateMetrics()
+		d.MustSetStatusAndStep(upgrade.Height, urproto.UpgradeStatus_ACTIVE, urproto.UpgradeStep_PRE_UPGRADE_CHECK)
 	}
 
 	// no need to run checks if none are enabled
@@ -72,8 +71,7 @@ func (d *Daemon) preUpgradeChecks(
 	if slices.Contains(cfg.Enabled, checksproto.PreCheck_PULL_DOCKER_IMAGE.String()) {
 		status := sm.GetPreCheckStatus(upgrade.Height, checksproto.PreCheck_PULL_DOCKER_IMAGE)
 		if status != checksproto.CheckStatus_FINISHED {
-			sm.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_PULL_DOCKER_IMAGE, checksproto.CheckStatus_RUNNING)
-			d.updateMetrics()
+			d.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_PULL_DOCKER_IMAGE, checksproto.CheckStatus_RUNNING)
 
 			logger.Infof(
 				"Pre upgrade check: %s Checking if upgrade tag %s is available",
@@ -83,8 +81,7 @@ func (d *Daemon) preUpgradeChecks(
 			_, newImage, err := checks.PullDockerImage(ctx, d.dcc, serviceName, upgrade.Tag, upgrade.Height)
 			d.reportPreUpgradeRoutine(ctx, upgrade, newImage, err)
 
-			sm.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_PULL_DOCKER_IMAGE, checksproto.CheckStatus_FINISHED)
-			d.updateMetrics()
+			d.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_PULL_DOCKER_IMAGE, checksproto.CheckStatus_FINISHED)
 		}
 	}
 
@@ -94,8 +91,7 @@ func (d *Daemon) preUpgradeChecks(
 
 		if shouldRun && status != checksproto.CheckStatus_FINISHED {
 			if upgrade.Type == urproto.UpgradeType_NON_GOVERNANCE_COORDINATED {
-				sm.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_SET_HALT_HEIGHT, checksproto.CheckStatus_RUNNING)
-				d.updateMetrics()
+				d.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_SET_HALT_HEIGHT, checksproto.CheckStatus_RUNNING)
 
 				logger.Infof(
 					"Pre upgrade step: %s restarting daemon with halt-height %d",
@@ -111,8 +107,7 @@ func (d *Daemon) preUpgradeChecks(
 				).Notify(ctx)
 			}
 
-			sm.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_SET_HALT_HEIGHT, checksproto.CheckStatus_FINISHED)
-			d.updateMetrics()
+			d.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_SET_HALT_HEIGHT, checksproto.CheckStatus_FINISHED)
 		}
 
 		// When the halt height env was set the node will stop itself at the upgrade height
@@ -205,8 +200,7 @@ func (d *Daemon) postUpgradeChecks(ctx context.Context, sm *state_machine.StateM
 	defer func() {
 		// ensure we update the status to failed if any error was encountered
 		if err != nil {
-			d.stateMachine.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_FAILED)
-			d.updateMetrics()
+			d.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_FAILED)
 		}
 	}()
 	ctx = notification.WithUpgradeHeight(ctx, upgradeHeight)
@@ -227,8 +221,7 @@ func (d *Daemon) postUpgradeChecks(ctx context.Context, sm *state_machine.StateM
 	}
 
 	if currStep != urproto.UpgradeStep_POST_UPGRADE_CHECK {
-		d.stateMachine.SetStep(upgradeHeight, urproto.UpgradeStep_POST_UPGRADE_CHECK)
-		d.updateMetrics()
+		d.SetStep(upgradeHeight, urproto.UpgradeStep_POST_UPGRADE_CHECK)
 	}
 
 	// no need to run checks if none are enabled
@@ -239,14 +232,12 @@ func (d *Daemon) postUpgradeChecks(ctx context.Context, sm *state_machine.StateM
 	if slices.Contains(cfg.Enabled, checksproto.PostCheck_GRPC_RESPONSIVE.String()) {
 		status := sm.GetPostCheckStatus(upgradeHeight, checksproto.PostCheck_GRPC_RESPONSIVE)
 		if status != checksproto.CheckStatus_FINISHED {
-			sm.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_GRPC_RESPONSIVE, checksproto.CheckStatus_RUNNING)
-			d.updateMetrics()
+			d.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_GRPC_RESPONSIVE, checksproto.CheckStatus_RUNNING)
 
 			logger.Infof("Post upgrade check: %s Waiting for the grpc and cometbft services to be responsive", checksproto.PostCheck_GRPC_RESPONSIVE.String()).Notify(ctx)
 
 			_, err = checks.GrpcResponsive(ctx, d.cosmosClient, cfg.GrpcResponsive)
-			sm.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_GRPC_RESPONSIVE, checksproto.CheckStatus_FINISHED)
-			d.updateMetrics()
+			d.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_GRPC_RESPONSIVE, checksproto.CheckStatus_FINISHED)
 
 			if err != nil {
 				return errors.Wrapf(err, "post upgrade grpc-endpoint-response check failed")
@@ -257,14 +248,12 @@ func (d *Daemon) postUpgradeChecks(ctx context.Context, sm *state_machine.StateM
 	if slices.Contains(cfg.Enabled, checksproto.PostCheck_FIRST_BLOCK_VOTED.String()) {
 		status := sm.GetPostCheckStatus(upgradeHeight, checksproto.PostCheck_FIRST_BLOCK_VOTED)
 		if status != checksproto.CheckStatus_FINISHED {
-			sm.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_FIRST_BLOCK_VOTED, checksproto.CheckStatus_RUNNING)
-			d.updateMetrics()
+			d.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_FIRST_BLOCK_VOTED, checksproto.CheckStatus_RUNNING)
 
 			logger.Infof("Post upgrade check: %s Waiting for the on-chain block at upgrade height=%d to be signed by us", checksproto.PostCheck_FIRST_BLOCK_VOTED.String(), upgradeHeight).Notify(ctx)
 
 			err = checks.NextBlockSignedPostCheck(ctx, d.cosmosClient, cfg.FirstBlockVoted, upgradeHeight)
-			sm.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_FIRST_BLOCK_VOTED, checksproto.CheckStatus_FINISHED)
-			d.updateMetrics()
+			d.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_FIRST_BLOCK_VOTED, checksproto.CheckStatus_FINISHED)
 
 			if err != nil {
 				return errors.Wrapf(err, "post upgrade upgrade-block-signed check failed")
@@ -275,8 +264,7 @@ func (d *Daemon) postUpgradeChecks(ctx context.Context, sm *state_machine.StateM
 	if slices.Contains(cfg.Enabled, checksproto.PostCheck_CHAIN_HEIGHT_INCREASED.String()) {
 		status := sm.GetPostCheckStatus(upgradeHeight, checksproto.PostCheck_CHAIN_HEIGHT_INCREASED)
 		if status != checksproto.CheckStatus_FINISHED {
-			sm.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_CHAIN_HEIGHT_INCREASED, checksproto.CheckStatus_RUNNING)
-			d.updateMetrics()
+			d.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_CHAIN_HEIGHT_INCREASED, checksproto.CheckStatus_RUNNING)
 
 			logger.Infof(
 				"Post upgrade check: %s Waiting for the on-chain latest block height to be > upgrade height=%d",
@@ -284,8 +272,7 @@ func (d *Daemon) postUpgradeChecks(ctx context.Context, sm *state_machine.StateM
 			).Notify(ctx)
 
 			err = checks.ChainHeightIncreased(ctx, d.cosmosClient, cfg.ChainHeightIncreased, upgradeHeight)
-			sm.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_CHAIN_HEIGHT_INCREASED, checksproto.CheckStatus_FINISHED)
-			d.updateMetrics()
+			d.SetPostCheckStatus(upgradeHeight, checksproto.PostCheck_CHAIN_HEIGHT_INCREASED, checksproto.CheckStatus_FINISHED)
 
 			if err != nil {
 				return errors.Wrapf(err, "post upgrade next-block-height check failed")
