@@ -382,6 +382,7 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 				// let the user know that blazar sees the upcoming upgrade
 				if d.stateMachine.GetStep(futureUpgrade.Height) == urproto.UpgradeStep_NONE {
 					d.stateMachine.SetStep(futureUpgrade.Height, urproto.UpgradeStep_MONITORING)
+					d.updateMetrics()
 				}
 
 				// perform pre upgrade upgrade checks if we are close to the upgrade height
@@ -445,11 +446,13 @@ func (d *Daemon) performUpgrade(
 		// ensure we update the status to failed if any error was encountered
 		if err != nil {
 			d.stateMachine.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_FAILED)
+			d.updateMetrics()
 		}
 	}()
 	ctx = notification.WithUpgradeHeight(ctx, upgradeHeight)
 
 	d.stateMachine.MustSetStatus(upgradeHeight, urproto.UpgradeStatus_EXECUTING)
+	d.updateMetrics()
 
 	logger := log.FromContext(ctx)
 
@@ -477,6 +480,7 @@ func (d *Daemon) performUpgrade(
 
 	logger.Infof("Current image: %s. New image: %s found on the host", currImage, newImage).Notify(ctx)
 	d.stateMachine.MustSetStatusAndStep(upgradeHeight, urproto.UpgradeStatus_EXECUTING, urproto.UpgradeStep_COMPOSE_FILE_UPGRADE)
+	d.updateMetrics()
 
 	// take container down or check if it is down already
 	isRunning, err := d.dcc.IsServiceRunning(ctx, serviceName, compose.DownTimeout)

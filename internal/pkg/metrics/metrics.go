@@ -3,6 +3,8 @@ package metrics
 import (
 	"net/http"
 
+	checksproto "blazar/internal/pkg/proto/daemon"
+
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -26,6 +28,20 @@ type Metrics struct {
 func NewMetrics(composeFile, hostname, version string) *Metrics {
 	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version}
 
+	pre_checks := make([]string, 0, len(checksproto.PreCheck_value))
+	for pc, _ := range checksproto.PreCheck_value {
+		pre_checks = append(pre_checks, pc)
+	}
+
+	post_checks := make([]string, 0, len(checksproto.PostCheck_value))
+	for pc, _ := range checksproto.PostCheck_value {
+		post_checks = append(post_checks, pc)
+	}
+
+	blocks_to_upgrade_labels := []string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "chain_id", "validator_address"}
+	blocks_to_upgrade_labels = append(blocks_to_upgrade_labels, pre_checks...)
+	blocks_to_upgrade_labels = append(blocks_to_upgrade_labels, post_checks...)
+
 	metrics := &Metrics{
 		Up: promauto.NewGauge(
 			prometheus.GaugeOpts{
@@ -42,7 +58,7 @@ func NewMetrics(composeFile, hostname, version string) *Metrics {
 				Help:        "Number of blocks to the upgrade height",
 				ConstLabels: labels,
 			},
-			[]string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "chain_id", "validator_address"},
+			blocks_to_upgrade_labels,
 		),
 		LastObservedHeight: promauto.NewGauge(
 			prometheus.GaugeOpts{
