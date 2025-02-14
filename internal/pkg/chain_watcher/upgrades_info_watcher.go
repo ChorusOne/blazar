@@ -1,6 +1,7 @@
 package chain_watcher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	"blazar/internal/pkg/errors"
 	"blazar/internal/pkg/file_watcher"
+	"blazar/internal/pkg/log"
 
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
@@ -25,7 +27,7 @@ type NewUpgradeInfo struct {
 	Error error
 }
 
-func NewUpgradeInfoWatcher(upgradeInfoFilePath string, interval time.Duration) (*UpgradesInfoWatcher, error) {
+func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, interval time.Duration) (*UpgradesInfoWatcher, error) {
 	exists, fw, err := file_watcher.NewFileWatcher(upgradeInfoFilePath, interval)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error creating file watcher for %s", upgradeInfoFilePath)
@@ -49,6 +51,8 @@ func NewUpgradeInfoWatcher(upgradeInfoFilePath string, interval time.Duration) (
 		Upgrades: upgrades,
 	}
 
+	logger := log.FromContext(ctx)
+
 	go func() {
 		for {
 			newEvent := <-fw.ChangeEvents
@@ -65,9 +69,11 @@ func NewUpgradeInfoWatcher(upgradeInfoFilePath string, interval time.Duration) (
 				// we can export these errors as metrics later
 				var newUpgradeInfo NewUpgradeInfo
 				if err != nil {
+					logger.Debugf("Upgrade info watcher observed an error: %v", err)
 					newUpgradeInfo.Error = err
 					upgrades <- newUpgradeInfo
 				} else if upgrade != nil {
+					logger.Debugf("Upgrade info watcher observed an upgrade: %+v", *upgrade)
 					newUpgradeInfo.Plan = *upgrade
 					upgrades <- newUpgradeInfo
 					return
@@ -87,8 +93,7 @@ func (uiw *UpgradesInfoWatcher) checkIfUpdateIsNeeded() (*upgradetypes.Plan, err
 		return nil, errors.Wrapf(err, "failed to parse upgrade-info.json file")
 	}
 
-	// The file is newer than what we last saw
-	// so lets check if the upgrade plan height
+	// Lets check if the upgrade plan height
 	// is not equal to that what we last knew
 	//
 	// This breaks down in one edge case:
