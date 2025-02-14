@@ -28,7 +28,8 @@ type NewUpgradeInfo struct {
 }
 
 func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, interval time.Duration) (*UpgradesInfoWatcher, error) {
-	exists, fw, err := file_watcher.NewFileWatcher(upgradeInfoFilePath, interval)
+	logger := log.FromContext(ctx)
+	exists, fw, err := file_watcher.NewFileWatcher(logger, upgradeInfoFilePath, interval)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error creating file watcher for %s", upgradeInfoFilePath)
 	}
@@ -51,8 +52,6 @@ func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, inte
 		Upgrades: upgrades,
 	}
 
-	logger := log.FromContext(ctx)
-
 	go func() {
 		for {
 			newEvent := <-fw.ChangeEvents
@@ -60,7 +59,7 @@ func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, inte
 				panic(errors.Wrapf(newEvent.Error, "upgrade info watcher's file watcher observed an error"))
 			}
 			if e := newEvent.Event; e == file_watcher.FileCreated || e == file_watcher.FileModified {
-				upgrade, err := uiw.checkIfUpdateIsNeeded()
+				upgrade, err := uiw.checkIfUpdateIsNeeded(logger)
 
 				// we don't want to stop the watcher if there is an error here
 				// since it could be a temporary error
@@ -76,6 +75,7 @@ func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, inte
 					logger.Debugf("Upgrade info watcher observed an upgrade: %+v", *upgrade)
 					newUpgradeInfo.Plan = *upgrade
 					upgrades <- newUpgradeInfo
+					fw.Cancel()
 					return
 				}
 			}
@@ -87,11 +87,13 @@ func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, inte
 
 // checkIfUpdateIsNeeded reads update plan from upgrade-info.json
 // and returns the plan, if a new upgrade height has been hit
-func (uiw *UpgradesInfoWatcher) checkIfUpdateIsNeeded() (*upgradetypes.Plan, error) {
+func (uiw *UpgradesInfoWatcher) checkIfUpdateIsNeeded(logger *log.MultiLogger) (*upgradetypes.Plan, error) {
 	info, err := parseUpgradeInfoFile(uiw.filename)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse upgrade-info.json file")
 	}
+
+	logger.Debugf("Upgrade info watcher parsed upgrade-info.jon: %+v", info)
 
 	// Lets check if the upgrade plan height
 	// is not equal to that what we last knew
