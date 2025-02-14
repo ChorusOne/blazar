@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"blazar/internal/pkg/errors"
+	"blazar/internal/pkg/log"
 )
 
 type FileChangeEvent int
@@ -29,7 +30,7 @@ type FileWatcher struct {
 }
 
 // Returns if the file exists, file watcher, error
-func NewFileWatcher(filepath string, interval time.Duration) (bool, *FileWatcher, error) {
+func NewFileWatcher(logger *log.MultiLogger, filepath string, interval time.Duration) (bool, *FileWatcher, error) {
 	// In case file doesn't exist, modTime will be "zero"
 	// so we can still use it to check for "file change"
 	// as modTime of created file will be be greater than this
@@ -55,6 +56,7 @@ func NewFileWatcher(filepath string, interval time.Duration) (bool, *FileWatcher
 			case <-ticker.C:
 				var newEvent NewFileChangeEvent
 				exists, modTime, err := getFileStatus(filepath)
+				logger.Debugf("File watcher tick, latest info: exists=%v, modTime=%v, err=%v", exists, modTime, err)
 				if err != nil {
 					newEvent.Error = err
 				} else {
@@ -75,11 +77,13 @@ func NewFileWatcher(filepath string, interval time.Duration) (bool, *FileWatcher
 				case events <- newEvent:
 				// to prevent deadlock with events channel
 				case <-cancel:
+					logger.Debug("File watcher exiting")
 					return
 				}
 			// this isn't necessary since we exit in the above select statement
 			// but this will help in early exit in case cancel is called before the ticker fires
 			case <-cancel:
+				logger.Debug("File watcher exiting")
 				return
 			}
 		}

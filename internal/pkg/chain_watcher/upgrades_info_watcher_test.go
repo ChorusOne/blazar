@@ -1,6 +1,7 @@
 package chain_watcher
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -93,7 +94,7 @@ func TestMonitorUpgrade(t *testing.T) {
 				UIInterval: 5 * time.Millisecond,
 			},
 		}
-		uiw, err := NewUpgradeInfoWatcher(cfg.UpgradeInfoFilePath(), cfg.Watchers.UIInterval)
+		uiw, err := NewUpgradeInfoWatcher(context.Background(), cfg.UpgradeInfoFilePath(), cfg.Watchers.UIInterval)
 		require.NoError(t, err)
 
 		go func() {
@@ -120,7 +121,7 @@ func TestMonitorUpgrade(t *testing.T) {
 		// copy an upgrade file before creating the watcher
 		testutils.MustCopy(t, "upgrade-files/f1-good.json", cfg.UpgradeInfoFilePath())
 
-		uiw, err := NewUpgradeInfoWatcher(cfg.UpgradeInfoFilePath(), cfg.Watchers.UIInterval)
+		uiw, err := NewUpgradeInfoWatcher(context.Background(), cfg.UpgradeInfoFilePath(), cfg.Watchers.UIInterval)
 		require.NoError(t, err)
 
 		// the old upgrade-info.json file should be loaded

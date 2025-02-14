@@ -318,7 +318,7 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 	logger := log.FromContext(ctx)
 
 	logger.Infof("Monitoring %s for new upgrades", cfg.UpgradeInfoFilePath())
-	uiw, err := chain_watcher.NewUpgradeInfoWatcher(cfg.UpgradeInfoFilePath(), cfg.Watchers.UIInterval)
+	uiw, err := chain_watcher.NewUpgradeInfoWatcher(ctx, cfg.UpgradeInfoFilePath(), cfg.Watchers.UIInterval)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to start upgrade-info.json poller")
 	}
@@ -415,6 +415,7 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 			if upgrade.Error != nil {
 				d.metrics.UiwErrs.Inc()
 				logger.Err(err).Error("Error received from UpgradesInfoWatcher")
+				continue
 			}
 			d.updateMetrics()
 

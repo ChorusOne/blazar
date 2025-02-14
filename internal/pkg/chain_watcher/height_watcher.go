@@ -6,6 +6,7 @@ import (
 
 	"blazar/internal/pkg/cosmos"
 	"blazar/internal/pkg/errors"
+	"blazar/internal/pkg/log"
 
 	ctypes "github.com/cometbft/cometbft/types"
 )
@@ -29,11 +30,19 @@ func NewPeriodicHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client, 
 	cancel := make(chan struct{})
 	heights := make(chan NewHeight)
 
+	logger := log.FromContext(ctx)
+
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
 				height, err := cosmosClient.GetLatestBlockHeight(ctx)
+
+				if err != nil {
+					logger.Debugf("Height watcher observed an error: %v", err)
+				} else {
+					logger.Debugf("Height watcher observed new height: %d", height)
+				}
 
 				select {
 				case heights <- NewHeight{
@@ -43,11 +52,13 @@ func NewPeriodicHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client, 
 
 				// prevents deadlock with heights channel
 				case <-cancel:
+					logger.Debug("Height watcher exiting")
 					return
 				}
 			// this isn't necessary since we exit in the above select statement
 			// but this will help in early exit in case cancel is called before the ticker fires
 			case <-cancel:
+				logger.Debug("Height watcher exiting")
 				return
 			}
 		}
@@ -77,24 +88,30 @@ func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client)
 		return nil, err
 	}
 
+	logger := log.FromContext(ctx)
+
 	go func() {
 		for {
 			select {
 			case tx := <-txs:
 				if data, ok := tx.Data.(ctypes.EventDataNewBlock); ok {
+					height := data.Block.Header.Height
+					logger.Debugf("Height watcher observed new height: %d", height)
 					select {
 					case heights <- NewHeight{
-						Height: data.Block.Header.Height,
+						Height: height,
 						Error:  nil,
 					}:
 					// prevents deadlock with heights channel
 					case <-cancel:
+						logger.Debug("Height watcher exiting")
 						return
 					}
 				}
 			// this isn't necessary since we exit in the above select statement
 			// but this will help in early exit in case cancel is called before the new height fires
 			case <-cancel:
+				logger.Debug("Height watcher exiting")
 				return
 			}
 		}

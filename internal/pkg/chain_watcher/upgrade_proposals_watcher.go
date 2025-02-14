@@ -37,10 +37,12 @@ func NewUpgradeProposalsWatcher(ctx context.Context, cosmosClient *cosmos.Client
 
 				lastHeight, err := cosmosClient.GetLatestBlockHeight(ctx)
 				if err != nil {
+					logger.Debugf("Upgrade proposals watcher observed an error: %v", err)
 					select {
 					case errors <- err:
 					// to prevent deadlock with errors channel
 					case <-cancel:
+						logger.Debug("Upgrade proposals watcher is exiting")
 						return
 					}
 					continue
@@ -49,10 +51,12 @@ func NewUpgradeProposalsWatcher(ctx context.Context, cosmosClient *cosmos.Client
 				logger.Infof("Fetching the upgrade proposals at height %d", lastHeight)
 				_, _, upgrades, _, err := ur.Update(ctx, lastHeight, true)
 				if err != nil {
+					logger.Debugf("Upgrade proposals watcher observed an error: %v", err)
 					select {
 					case errors <- err:
 					// to prevent deadlock with errors channel
 					case <-cancel:
+						logger.Debug("Upgrade proposals watcher is exiting")
 						return
 					}
 					continue
