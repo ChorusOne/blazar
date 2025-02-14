@@ -328,7 +328,7 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 	if cfg.Watchers.HInterval > 0 {
 		hw = chain_watcher.NewPeriodicHeightWatcher(ctx, d.cosmosClient, cfg.Watchers.HInterval)
 	} else {
-		hw, err = chain_watcher.NewStreamingHeightWatcher(ctx, d.cosmosClient)
+		hw, err = chain_watcher.NewStreamingHeightWatcher(ctx, d.cosmosClient, cfg.Watchers.HTimeout)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to start streaming height watcher")
 		}
@@ -345,7 +345,7 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 		case newHeight := <-hw.Heights:
 			if newHeight.Error != nil {
 				d.metrics.HwErrs.Inc()
-				logger.Err(err).Error("Error received from HeightWatcher")
+				logger.Err(newHeight.Error).Error("Error received from HeightWatcher")
 				continue
 			}
 			d.metrics.LastObservedHeight.Set(float64(newHeight.Height))

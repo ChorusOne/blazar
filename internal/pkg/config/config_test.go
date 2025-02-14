@@ -32,6 +32,7 @@ func TestReadConfigToml(t *testing.T) {
 		Watchers: Watchers{
 			UIInterval: 300 * time.Millisecond,
 			HInterval:  0,
+			HTimeout:   20 * time.Second,
 			UPInterval: 10 * time.Minute,
 		},
 		Clients: Clients{
