@@ -70,7 +70,7 @@ func NewPeriodicHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client, 
 	}
 }
 
-func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client) (*HeightWatcher, error) {
+func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client, timeout time.Duration) (*HeightWatcher, error) {
 	cancel := make(chan struct{})
 	heights := make(chan NewHeight)
 
@@ -83,7 +83,9 @@ func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client)
 	// create some wiggle room in case blazar can't process the blocks fast enough
 	capacity := 10
 
-	txs, err := cosmosClient.GetCometbftClient().Subscribe(ctx, "blazar-client", "tm.event = 'NewBlock'", capacity)
+	name, query := "blazar-client", "tm.event = 'NewBlock'"
+
+	txs, err := cosmosClient.GetCometbftClient().Subscribe(ctx, name, query, capacity)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +93,63 @@ func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client)
 	logger := log.FromContext(ctx)
 
 	go func() {
+		var lastHeight int64
 		for {
+			timeout := time.NewTimer(timeout)
+
 			select {
+			case <-timeout.C:
+				logger.Warn("Height watcher has been stuck for too long, checking if chain is stuck")
+				var height int64
+				for {
+					// We will keep retrying until we get a height. THere are too many things that can go wrong so we
+					// return errors to the channel which will make the error metric go up, hence informaing the user
+					// that something is wrong
+					height, err = cosmosClient.GetLatestBlockHeight(ctx)
+					if err != nil {
+						select {
+						case heights <- NewHeight{
+							Height: 0,
+							Error:  errors.Wrapf(err, "error querying chain for height"),
+						}:
+						// prevents deadlock with heights channel
+						case <-cancel:
+							return
+						}
+						time.Sleep(time.Second)
+					} else {
+						break
+					}
+				}
+				if height == lastHeight {
+					logger.Warn("Chain is stuck, I will NOT re-create ws subscription")
+					continue
+				}
+				logger.Warnf("Chain is moving, latest height seen by subscription: %d, latest height seen on chain: %d. Re-creating ws subscription", lastHeight, height)
+				err = cosmosClient.GetCometbftClient().Unsubscribe(ctx, name, query)
+				if err != nil {
+					logger.Warnf("Failed to unsubscribe from websocket, continuing anyways: %v", err)
+				}
+				for {
+					// Similar approach as the height polling
+					txs, err = cosmosClient.GetCometbftClient().Subscribe(ctx, name, query, capacity)
+					if err != nil {
+						select {
+						case heights <- NewHeight{
+							Height: 0,
+							Error:  errors.Wrapf(err, "timeout loop failed re-creating ws subscription"),
+						}:
+						// prevents deadlock with heights channel
+						case <-cancel:
+							return
+						}
+						time.Sleep(time.Second)
+					} else {
+						break
+					}
+				}
+				logger.Infof("Re-created ws subscription")
+
 			case tx := <-txs:
 				if data, ok := tx.Data.(ctypes.EventDataNewBlock); ok {
 					height := data.Block.Header.Height
