@@ -40,22 +40,22 @@ func (d *Daemon) updateMetrics() {
 		upgradeHeight := strconv.FormatInt(upgrade.Height, 10)
 		status := d.stateMachine.GetStatus(upgrade.Height)
 
-		pre_checks_status := make([]string, 0, len(checksproto.PreCheck_value))
+		preChecksStatus := make([]string, 0, len(checksproto.PreCheck_value))
 		for _, v := range checksproto.PreCheck_value {
-			pre_checks_status = append(pre_checks_status, d.stateMachine.GetPreCheckStatus(upgrade.Height, checksproto.PreCheck(v)).String())
+			preChecksStatus = append(preChecksStatus, d.stateMachine.GetPreCheckStatus(upgrade.Height, checksproto.PreCheck(v)).String())
 		}
 
-		post_checks_status := make([]string, 0, len(checksproto.PreCheck_value))
+		postChecksStatus := make([]string, 0, len(checksproto.PreCheck_value))
 		for _, v := range checksproto.PostCheck_value {
-			post_checks_status = append(post_checks_status, d.stateMachine.GetPostCheckStatus(upgrade.Height, checksproto.PostCheck(v)).String())
+			postChecksStatus = append(postChecksStatus, d.stateMachine.GetPostCheckStatus(upgrade.Height, checksproto.PostCheck(v)).String())
 		}
 
 		// Merge all label values into a single slice
 		labelValues := append([]string{
 			upgradeHeight, upgrade.Name, status.String(),
 			d.stateMachine.GetStep(upgrade.Height).String(), d.chainID, d.validatorAddress,
-		}, pre_checks_status...)
-		labelValues = append(labelValues, post_checks_status...)
+		}, preChecksStatus...)
+		labelValues = append(labelValues, postChecksStatus...)
 
 		d.metrics.BlocksToUpgrade.WithLabelValues(labelValues...).Set(float64(upgrade.Height - d.currHeight))
 	}
