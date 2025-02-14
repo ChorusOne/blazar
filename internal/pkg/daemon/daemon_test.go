@@ -525,6 +525,7 @@ func generateConfig(t *testing.T, tempDir, serviceName string, grpcPort, cometbf
 		Watchers: config.Watchers{
 			UIInterval: time.Millisecond * 5,
 			HInterval:  time.Second * 0,
+			HTimeout:   20 * time.Second,
 			UPInterval: time.Minute * 5,
 		},
 		Clients: config.Clients{
