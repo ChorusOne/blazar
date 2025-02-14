@@ -49,6 +49,7 @@ type DockerCredentialHelper struct {
 type Watchers struct {
 	UIInterval time.Duration `toml:"upgrade-info-interval"`
 	HInterval  time.Duration `toml:"height-interval"`
+	HTimeout   time.Duration `toml:"height-timeout"`
 	UPInterval time.Duration `toml:"upgrade-proposals-interval"`
 }
 
@@ -465,6 +466,10 @@ func (cfg *Config) ValidateAll() error {
 
 	if cfg.Watchers.HInterval < 0 {
 		return errors.New("watchers.height-interval cannot be less than 0")
+	}
+
+	if cfg.Watchers.HInterval == 0 && cfg.Watchers.HTimeout <= 0 {
+		return errors.New("watchers.height-timeout cannot be less than or equal to 0 when using ws subscriptions")
 	}
 
 	if cfg.Watchers.UPInterval <= 0 {
