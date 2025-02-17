@@ -58,6 +58,8 @@ func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, inte
 			if newEvent.Error != nil {
 				panic(errors.Wrapf(newEvent.Error, "upgrade info watcher's file watcher observed an error"))
 			}
+			logger.Debugf("Upgrade info watcher observed a file event: %v", newEvent.Event)
+
 			if e := newEvent.Event; e == file_watcher.FileCreated || e == file_watcher.FileModified {
 				upgrade, err := uiw.checkIfUpdateIsNeeded(logger)
 
@@ -93,7 +95,7 @@ func (uiw *UpgradesInfoWatcher) checkIfUpdateIsNeeded(logger *log.MultiLogger) (
 		return nil, errors.Wrapf(err, "failed to parse upgrade-info.json file")
 	}
 
-	logger.Debugf("Upgrade info watcher parsed upgrade-info.jon: %+v", info)
+	logger.Debugf("Upgrade info watcher parsed upgrade-info.json: %+v", info)
 
 	// Lets check if the upgrade plan height
 	// is not equal to that what we last knew

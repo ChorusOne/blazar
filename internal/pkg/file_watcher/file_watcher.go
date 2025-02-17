@@ -56,7 +56,6 @@ func NewFileWatcher(logger *log.MultiLogger, filepath string, interval time.Dura
 			case <-ticker.C:
 				var newEvent NewFileChangeEvent
 				exists, modTime, err := getFileStatus(filepath)
-				logger.Debugf("File watcher tick, latest info: exists=%v, modTime=%v, err=%v", exists, modTime, err)
 				if err != nil {
 					newEvent.Error = err
 				} else {
