@@ -32,11 +32,9 @@ upgrade-info-interval = "300ms"
 # If set to zero (0), Blazar will use a streaming WebSocket client to get the height for every new block
 # Interpreted as Go's time.Duration
 height-interval = "0s"
-# Sometimes the WSS height watcher gets stuck. maybe the chain process restarted
-# and the WS subscription remains hanging with blazar not being able to
-# receive new block heights. In such a case this timeout will be used
-# restart the height-watcher. This parameter is ignored in case of polling
-# based height watcher
+# It happens that WSS height watcher gets stuck. There is a variety of reasons for that (e.g node restarts, network issues, bugs).
+# Blazar can't function properly if it doesn't know the current height of the chain. To ensure the height watcher is always working,
+# the height-timeout parameter is used to restart the height watcher if it doesn't receive a new block height for a given period of time.
 height-timeout = "20s"
 # Interval to poll for upgrade proposals
 # Interpreted as Go's time.Duration

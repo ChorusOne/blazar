@@ -102,7 +102,7 @@ func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client,
 				logger.Warn("Height watcher has been stuck for too long, checking if chain is stuck")
 				var height int64
 				for {
-					// We will keep retrying until we get a height. THere are too many things that can go wrong so we
+					// We will keep retrying until we get a height. There are too many things that can go wrong so we
 					// return errors to the channel which will make the error metric go up, hence informaing the user
 					// that something is wrong
 					height, err = cosmosClient.GetLatestBlockHeight(ctx)
@@ -126,8 +126,7 @@ func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client,
 					continue
 				}
 				logger.Warnf("Chain is moving, latest height seen by subscription: %d, latest height seen on chain: %d. Re-creating ws subscription", lastHeight, height)
-				err = cosmosClient.GetCometbftClient().Unsubscribe(ctx, name, query)
-				if err != nil {
+				if err = cosmosClient.GetCometbftClient().Unsubscribe(ctx, name, query); err != nil {
 					logger.Warnf("Failed to unsubscribe from websocket, continuing anyways: %v", err)
 				}
 				for {
