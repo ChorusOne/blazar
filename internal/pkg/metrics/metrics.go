@@ -38,7 +38,7 @@ func NewMetrics(composeFile, hostname, version string) *Metrics {
 		postChecks = append(postChecks, pc)
 	}
 
-	blocksToUpgradeLabels := []string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "chain_id", "validator_address"}
+	blocksToUpgradeLabels := []string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "chain_id", "validator_address", "upgrade_tag"}
 	blocksToUpgradeLabels = append(blocksToUpgradeLabels, preChecks...)
 	blocksToUpgradeLabels = append(blocksToUpgradeLabels, postChecks...)
 
