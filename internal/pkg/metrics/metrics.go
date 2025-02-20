@@ -116,7 +116,7 @@ func NewProxyMetrics() *ProxyMetrics {
 		prometheus.CounterOpts{
 			Namespace: proxyNamespace,
 			Name:      "connection_errors",
-			Help:      "Upgrade proposals watcher error count",
+			Help:      "Proxy connections error count",
 		},
 		instanceLabels,
 	)

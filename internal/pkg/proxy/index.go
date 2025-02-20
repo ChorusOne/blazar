@@ -129,7 +129,7 @@ func IndexHandler(cfg *Config, proxyMetrics *metrics.ProxyMetrics) http.HandlerF
 
 				if pair.Error != nil {
 					proxyMetrics.ConnErrs.WithLabelValues(pair.Instance.Name,
-						pair.Instance.Host, strconv.Itoa(pair.Instance.GRPCPort), strconv.Itoa(pair.Instance.HTTPPort), pair.Instance.Network).Inc()
+						pair.Instance.Host, strconv.Itoa(pair.Instance.HTTPPort), strconv.Itoa(pair.Instance.GRPCPort), pair.Instance.Network).Inc()
 					noErrors++
 				}
 			}
