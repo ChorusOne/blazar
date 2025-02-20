@@ -3,13 +3,14 @@ package proxy
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net"
 	"net/http"
 	"strconv"
 
 	"blazar/internal/pkg/log"
 	"blazar/internal/pkg/metrics"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Proxy struct {
