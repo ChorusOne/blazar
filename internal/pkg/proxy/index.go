@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"blazar/internal/pkg/metrics"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -25,7 +26,7 @@ type instancePair struct {
 	Error       error
 }
 
-func IndexHandler(cfg *Config) http.HandlerFunc {
+func IndexHandler(cfg *Config, proxyMetrics *metrics.ProxyMetrics) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		mutex := sync.Mutex{}
 		networkUpgrades := make(map[string][]instancePair)
@@ -127,6 +128,8 @@ func IndexHandler(cfg *Config) http.HandlerFunc {
 				}
 
 				if pair.Error != nil {
+					proxyMetrics.ConnErrs.WithLabelValues(pair.Instance.Name,
+						pair.Instance.Host, strconv.Itoa(pair.Instance.GRPCPort), strconv.Itoa(pair.Instance.HTTPPort), pair.Instance.Network).Inc()
 					noErrors++
 				}
 			}
