@@ -39,7 +39,7 @@ func (cfg *Config) ValidateAll() error {
 			return errors.New("instance name not specified")
 		}
 		if instance.Host == "" {
-			return errors.New("instance hostnot specified")
+			return errors.New("instance host not specified")
 		}
 		if instance.HTTPPort == 0 {
 			return errors.New("instance http port not specified")

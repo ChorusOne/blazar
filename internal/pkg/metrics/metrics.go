@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	namespace = "blazar"
+	namespace      = "blazar"
+	proxyNamespace = "blazar_proxy"
 )
 
 type Metrics struct {
@@ -103,6 +104,23 @@ func NewMetrics(composeFile, hostname, version string) *Metrics {
 	}
 
 	return metrics
+}
+
+type ProxyMetrics struct {
+	ConnErrs *prometheus.CounterVec
+}
+
+func NewProxyMetrics() *ProxyMetrics {
+	instanceLabels := []string{"name", "host", "http_port", "grpc_port", "network"}
+	connectionErrors := promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: proxyNamespace,
+			Name:      "connection_errors",
+			Help:      "Proxy connections error count",
+		},
+		instanceLabels,
+	)
+	return &ProxyMetrics{ConnErrs: connectionErrors}
 }
 
 func RegisterHandler(mux *runtime.ServeMux) error {
