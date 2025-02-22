@@ -151,11 +151,11 @@ func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client,
 
 			case tx := <-txs:
 				if data, ok := tx.Data.(ctypes.EventDataNewBlock); ok {
-					height := data.Block.Header.Height
-					logger.Debugf("Height watcher observed new height: %d", height)
+					lastHeight = data.Block.Header.Height
+					logger.Debugf("Height watcher observed new height: %d", lastHeight)
 					select {
 					case heights <- NewHeight{
-						Height: height,
+						Height: lastHeight,
 						Error:  nil,
 					}:
 					// prevents deadlock with heights channel
