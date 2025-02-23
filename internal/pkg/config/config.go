@@ -460,8 +460,8 @@ func (cfg *Config) ValidateAll() error {
 		return errors.New("http-port cannot be 0")
 	}
 
-	if cfg.Watchers.UIInterval <= 0 {
-		return errors.New("watchers.upgrade-info-interval cannot be less than or equal to 0")
+	if cfg.Watchers.UIInterval < 0 {
+		return errors.New("watchers.upgrade-info-interval cannot be less than 0")
 	}
 
 	if cfg.Watchers.HInterval < 0 {

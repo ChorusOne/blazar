@@ -25,7 +25,7 @@ http-port = 1234
 grpc-port = 5678
 
 [watchers]
-# Interval to poll for upgrade-info.json
+# Interval to poll for upgrade-info.json. If zero (0) blazar will utilize fsnotify to watch the file, instaead of polling at given interval.
 # Interpreted as Go's time.Duration
 upgrade-info-interval = "300ms"
 # Interval to poll the chain for the last height

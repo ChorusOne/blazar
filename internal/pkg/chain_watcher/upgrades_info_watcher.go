@@ -29,7 +29,17 @@ type NewUpgradeInfo struct {
 
 func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, interval time.Duration) (*UpgradesInfoWatcher, error) {
 	logger := log.FromContext(ctx)
-	exists, fw, err := file_watcher.NewFileWatcher(logger, upgradeInfoFilePath, interval)
+	var (
+		exists bool
+		fw     file_watcher.FileWatcher
+		err    error
+	)
+
+	if interval == 0 {
+		exists, fw, err = file_watcher.NewNotifyFileWatcher(logger, upgradeInfoFilePath)
+	} else {
+		exists, fw, err = file_watcher.NewPollingFileWatcher(logger, upgradeInfoFilePath, interval)
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "error creating file watcher for %s", upgradeInfoFilePath)
 	}
@@ -54,7 +64,7 @@ func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, inte
 
 	go func() {
 		for {
-			newEvent := <-fw.ChangeEvents
+			newEvent := <-fw.ChangeEvents()
 			if newEvent.Error != nil {
 				panic(errors.Wrapf(newEvent.Error, "upgrade info watcher's file watcher observed an error"))
 			}
