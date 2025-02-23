@@ -29,6 +29,9 @@ test:
 lint:
 	golangci-lint run ./...
 
+format:
+	go fmt ./...
+
 proto:
 	@ if ! which protoc > /dev/null; then \
 		echo "error: protoc not installed" >&2; \

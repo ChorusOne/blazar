@@ -523,7 +523,7 @@ func generateConfig(t *testing.T, tempDir, serviceName string, grpcPort, cometbf
 		UpgradeMode:    config.UpgradeInComposeFile,
 		Host:           "dummy",
 		Watchers: config.Watchers{
-			UIInterval: time.Millisecond * 5,
+			UIInterval: 0, // NotifyFileWatcher is enabled
 			HInterval:  time.Second * 0,
 			HTimeout:   20 * time.Second,
 			UPInterval: time.Minute * 5,

@@ -1,12 +1,6 @@
 package file_watcher
 
-import (
-	"os"
-	"time"
-
-	"blazar/internal/pkg/errors"
-	"blazar/internal/pkg/log"
-)
+import "os"
 
 type FileChangeEvent int
 
@@ -21,90 +15,15 @@ type NewFileChangeEvent struct {
 	Error error
 }
 
-type FileWatcher struct {
-	// full path to a watched file
-	lastModTime  time.Time
-	exists       bool
-	ChangeEvents <-chan NewFileChangeEvent
-	cancel       chan<- struct{}
+type FileWatcher interface {
+	ChangeEvents() <-chan NewFileChangeEvent
+	Cancel()
 }
 
-// Returns if the file exists, file watcher, error
-func NewFileWatcher(logger *log.MultiLogger, filepath string, interval time.Duration) (bool, *FileWatcher, error) {
-	// In case file doesn't exist, modTime will be "zero"
-	// so we can still use it to check for "file change"
-	// as modTime of created file will be be greater than this
-	initExists, initModTime, err := getFileStatus(filepath)
-	if err != nil {
-		return false, nil, errors.Wrapf(err, "failed to check %s status", filepath)
+func fileExists(file string) (bool, error) {
+	_, err := os.Stat(file)
+	if os.IsNotExist(err) {
+		return false, nil
 	}
-
-	events := make(chan NewFileChangeEvent)
-	cancel := make(chan struct{})
-
-	fw := &FileWatcher{
-		lastModTime:  initModTime,
-		exists:       initExists,
-		ChangeEvents: events,
-		cancel:       cancel,
-	}
-
-	go func() {
-		ticker := time.NewTicker(interval)
-		for {
-			select {
-			case <-ticker.C:
-				var newEvent NewFileChangeEvent
-				exists, modTime, err := getFileStatus(filepath)
-				if err != nil {
-					newEvent.Error = err
-				} else {
-					if exists != fw.exists {
-						if exists {
-							fw.lastModTime = modTime
-							newEvent.Event = FileCreated
-						} else {
-							newEvent.Event = FileRemoved
-						}
-						fw.exists = exists
-					} else if modTime.After(fw.lastModTime) {
-						fw.lastModTime = modTime
-						newEvent.Event = FileModified
-					}
-				}
-				select {
-				case events <- newEvent:
-				// to prevent deadlock with events channel
-				case <-cancel:
-					logger.Debug("File watcher exiting")
-					return
-				}
-			// this isn't necessary since we exit in the above select statement
-			// but this will help in early exit in case cancel is called before the ticker fires
-			case <-cancel:
-				logger.Debug("File watcher exiting")
-				return
-			}
-		}
-	}()
-	return initExists, fw, nil
-}
-
-func (fw *FileWatcher) Cancel() {
-	fw.cancel <- struct{}{}
-}
-
-// Checks if the file exists and returns the timestamp of the last modification
-// returns exists, modTime, error
-func getFileStatus(file string) (bool, time.Time, error) {
-	stat, err := os.Stat(file)
-
-	switch {
-	case os.IsNotExist(err):
-		return false, time.Time{}, nil
-	case err != nil:
-		return false, time.Time{}, err
-	}
-
-	return true, stat.ModTime(), nil
+	return err == nil, err
 }
