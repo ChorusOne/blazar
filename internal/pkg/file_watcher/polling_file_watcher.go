@@ -59,6 +59,12 @@ func NewPollingFileWatcher(logger *log.MultiLogger, filepath string, interval ti
 						newEvent.Event = FileModified
 					}
 				}
+
+				// if event is 0, it means no change in file
+				if newEvent.Event == 0 {
+					continue
+				}
+
 				select {
 				case events <- newEvent:
 				// to prevent deadlock with events channel
