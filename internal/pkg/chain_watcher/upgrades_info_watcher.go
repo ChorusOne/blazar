@@ -37,10 +37,10 @@ func NewUpgradeInfoWatcher(ctx context.Context, upgradeInfoFilePath string, inte
 
 	if interval == 0 {
 		exists, fw, err = file_watcher.NewNotifyFileWatcher(logger, upgradeInfoFilePath)
-		logger.Info("Selected notify file watcher")
+		logger.Info("Spawned notify file watcher")
 	} else {
 		exists, fw, err = file_watcher.NewPollingFileWatcher(logger, upgradeInfoFilePath, interval)
-		logger.Info("Selected polling file watcher")
+		logger.Info("Spawned polling file watcher")
 	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "error creating file watcher for %s", upgradeInfoFilePath)
