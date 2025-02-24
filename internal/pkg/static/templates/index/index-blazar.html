@@ -163,7 +163,16 @@
                     }
                 });
             });
-
+            $(document).ready(function() {
+              $('div[id="version-alert"]').on('click', function() {
+                const height = $(this).closest('tr').find('th:first-child').text().trim();
+                $('details:has(#registerVersionForm)').prop('open', true);
+                $('#registerVersionForm #height').val(height);
+                $('html, body').animate({
+                  scrollTop: $('#registerVersionForm').offset().top - 100
+                }, 500);
+              });
+            });
             // Force sync
             $("#force_sync").click(function(ev) {
                 const url = "/v1/upgrades/force_sync";
@@ -392,7 +401,7 @@
                 {{ if $element.Tag }}
                 {{ $element.Tag }}
                 {{ else }}
-                <div style="border-bottom: none; color: #ff9500" data-tooltip="Without version tag Blazar will ignore the upgrade">⚠ </div>
+                <div style="border-bottom: none; cursor: pointer; color: #ff9500" id="version-alert" data-tooltip="Without version tag Blazar will ignore the upgrade. Click to add the version tag at this height.">➕ </div>
                 {{ end }}
                 </th>
                 <th scope="col">{{ $element.Network }}</th>
