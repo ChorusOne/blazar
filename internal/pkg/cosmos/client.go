@@ -2,9 +2,11 @@ package cosmos
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -14,7 +16,6 @@ import (
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cometbft "github.com/cometbft/cometbft/rpc/client/http"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -99,7 +100,15 @@ func (cc *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
 
 	res, err := cc.tmClient.GetLatestBlock(ctx, &tmservice.GetLatestBlockRequest{}, cc.callOptions...)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get latest block")
+		status, err2 := cc.GetStatus(ctx)
+		if err2 != nil {
+			return 0, errors.Wrapf(err, "failed to get latest block & status")
+		}
+		height, err := strconv.ParseInt(status.Result.SyncInfo.LatestBlockHeight, 10, 64)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to parse height from status")
+		}
+		return height, nil
 	}
 
 	if res.SdkBlock != nil {
@@ -160,12 +169,40 @@ func (cc *Client) GetProposalsV1beta1(ctx context.Context) (v1beta1.Proposals, e
 	return proposals, nil
 }
 
-func (cc *Client) GetStatus(ctx context.Context) (*ctypes.ResultStatus, error) {
-	response, err := cc.cometbftClient.Status(ctx)
+type StatusResponse struct {
+	Result struct {
+		ValidatorInfo struct {
+			Address     string `json:"address"`
+			VotingPower string `json:"voting_power"`
+		} `json:"validator_info"`
+		NodeInfo struct {
+			Network string `json:"network"`
+		} `json:"node_info"`
+		SyncInfo struct {
+			LatestBlockTime   string `json:"latest_block_time"`
+			LatestBlockHeight string `json:"latest_block_height"`
+		} `json:"sync_info"`
+	} `json:"result"`
+}
+
+func (cc *Client) GetStatus(ctx context.Context) (*StatusResponse, error) {
+	statusURL := strings.Replace(fmt.Sprintf("%s/status", cc.cometbftClient.Remote()), "tcp://", "http://", 1)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get status")
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	return response, nil
+	c := http.Client{}
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var statusResp StatusResponse
+	if err := json.NewDecoder(resp.Body).Decode(&statusResp); err != nil {
+		return nil, fmt.Errorf("failed to decode JSON: %w", err)
+	}
+	return &statusResp, nil
 }
 
 func (cc *Client) NodeInfo(ctx context.Context) (*tmservice.GetNodeInfoResponse, error) {

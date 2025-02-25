@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -135,19 +136,22 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to get status response")
 	}
 
-	d.chainID = status.NodeInfo.Network
-	d.validatorAddress = status.ValidatorInfo.Address.String()
+	d.chainID = status.Result.NodeInfo.Network
+	d.validatorAddress = status.Result.ValidatorInfo.Address
 
 	// display information about the node
-	d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get node info")
-	}
-	logger.Infof("Connected to the %s node ID: %s", d.nodeInfo.ApplicationVersion.Name, d.nodeInfo.DefaultNodeInfo.DefaultNodeID)
-
-	// if the env prefix is not set, we set it to <APP_NAME>_ (e.g "GAIAD_")
 	if cfg.Compose.EnvPrefix == "" {
-		cfg.Compose.EnvPrefix = strings.ToUpper(d.nodeInfo.ApplicationVersion.AppName) + "_"
+		// FIXME: this will break checks that look at nodeInfo
+		d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get node info")
+		}
+		logger.Infof("Connected to the %s node ID: %s", d.nodeInfo.ApplicationVersion.Name, d.nodeInfo.DefaultNodeInfo.DefaultNodeID)
+
+		// if the env prefix is not set, we set it to <APP_NAME>_ (e.g "GAIAD_")
+		if cfg.Compose.EnvPrefix == "" {
+			cfg.Compose.EnvPrefix = strings.ToUpper(d.nodeInfo.ApplicationVersion.AppName) + "_"
+		}
 	}
 	logger.Infof("Using env prefix: %s", cfg.Compose.EnvPrefix)
 
@@ -156,13 +160,15 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to validate docker compose settings")
 	}
 
-	logger.Infof("Observed latest block height: %d", status.SyncInfo.LatestBlockHeight)
-	d.currHeight = status.SyncInfo.LatestBlockHeight
-	d.currHeightTime = status.SyncInfo.LatestBlockTime
+	d.currHeight, err = strconv.ParseInt(status.Result.SyncInfo.LatestBlockHeight, 10, 64)
+	logger.Infof("Observed latest block height: %d", d.currHeight)
+	d.currHeightTime, err = time.Parse(time.RFC3339Nano, status.Result.SyncInfo.LatestBlockTime)
 	d.startupHeight = d.currHeight
 
-	logger.Infof("Observed node address: %s", status.ValidatorInfo.Address.String())
-	d.nodeAddress = status.ValidatorInfo.Address
+	logger.Infof("Observed node address: %s", status.Result.ValidatorInfo.Address)
+	d.nodeAddress, err = hex.DecodeString(status.Result.ValidatorInfo.Address)
+
+	valVP, err := strconv.ParseInt(status.Result.ValidatorInfo.VotingPower, 10, 64)
 
 	// test consensus state endpoint
 	logger.Info("Attempting to get consensus state")
@@ -171,8 +177,8 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to get consensus state")
 	}
 	logger.Infof(
-		"Total VP: %d, Node VP: %d, Node share: %.2f", pvp.TotalVP, status.ValidatorInfo.VotingPower,
-		(float64(status.ValidatorInfo.VotingPower)/float64(pvp.TotalVP))*100,
+		"Total VP: %d, Node VP: %d, Node share: %.2f", pvp.TotalVP, valVP,
+		(float64(valVP)/float64(pvp.TotalVP))*100,
 	)
 
 	// fetch future upgrades
