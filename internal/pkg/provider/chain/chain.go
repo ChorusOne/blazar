@@ -2,7 +2,6 @@ package chain
 
 import (
 	"context"
-	"fmt"
 	"sort"
 
 	"blazar/internal/pkg/errors"
@@ -33,11 +32,6 @@ func NewProvider(cosmosClient CosmosProposalsProvider, chain string, priority in
 }
 
 func (p *Provider) GetUpgrades(ctx context.Context) ([]*urproto.Upgrade, error) {
-	fmt.Println(p.chain)
-	if p.chain == "berachain_testnet_2" {
-		fmt.Println("HACK, delete this")
-		return []*urproto.Upgrade{}, nil
-	}
 	upgrades, err := p.fetchAllUpgrades(ctx)
 	if err != nil {
 		return []*urproto.Upgrade{}, err
