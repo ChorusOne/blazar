@@ -391,7 +391,7 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 
 				// perform pre upgrade upgrade checks if we are close to the upgrade height
 				if futureUpgrade.Height < d.currHeight+cfg.Checks.PreUpgrade.Blocks {
-					newHeight, preErr := d.preUpgradeChecks(ctx, d.currHeight, d.stateMachine, d.dcc, &cfg.Compose, &cfg.Checks.PreUpgrade, cfg.ComposeService, futureUpgrade)
+					newHeight, preErr := d.preUpgradeChecks(ctx, d.currHeight, d.stateMachine, d.dcc, &cfg.Compose, &cfg.Checks.PreUpgrade, cfg.ComposeService, futureUpgrade, cfg.UpgradeRegistry.Network)
 					if preErr != nil {
 						d.MustSetStatus(futureUpgrade.Height, urproto.UpgradeStatus_FAILED)
 					}
