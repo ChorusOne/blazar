@@ -186,21 +186,30 @@ type StatusResponse struct {
 }
 
 func (cc *Client) GetStatus(ctx context.Context) (*StatusResponse, error) {
+	// This code is manually deserializing the raw JSON output of the /status endpoint
+	// instead of using `cc.cometbftClient.Status(ctx)` because certain chains
+	// are using BLS12-381 keys, which are not part of the support enum for key format
+	// on the cometbft proto definitions, defined at
+	// https://github.com/cometbft/cometbft/blob/v0.38.17/proto/tendermint/crypto/keys.proto#L13
+	// BLS12-381 support was added to the enum on 1.0.0, in this commit
+	// https://github.com/cometbft/cometbft/commit/354c6bedd35a5825accb9defd60d65e27c6de643
+	// but 1.0.0 is not yet usable in this context; cosmossdk needs to release a new version for it
+
 	statusURL := strings.Replace(fmt.Sprintf("%s/status", cc.cometbftClient.Remote()), "tcp://", "http://", 1)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, errors.Wrapf(err, "failed to create request")
 	}
 	c := http.Client{}
 	resp, err := c.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to perform HTTP request: %w", err)
+		return nil, errors.Wrapf(err, "failed to perform HTTP request")
 	}
 	defer resp.Body.Close()
 
 	var statusResp StatusResponse
 	if err := json.NewDecoder(resp.Body).Decode(&statusResp); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON: %w", err)
+		return nil, errors.Wrapf(err, "failed to decode JSON")
 	}
 	return &statusResp, nil
 }
