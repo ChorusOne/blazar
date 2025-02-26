@@ -164,6 +164,17 @@
                 });
             });
 
+            $(document).ready(function() {
+              $('div[id="version-alert"]').on('click', function() {
+                const height = $(this).attr("data-height")
+                $('details:has(#registerVersionForm)').prop('open', true);
+                $('#registerVersionForm #height').val(height);
+                $('html, body').animate({
+                  scrollTop: $('#registerVersionForm').offset().top - 100
+                }, 500);
+              });
+            });
+
             // Force sync
             $("#force_sync").click(function(ev) {
                 const url = "/v1/upgrades/force_sync";
@@ -391,8 +402,10 @@
                 <th scope="col">
                 {{ if $element.Tag }}
                 {{ $element.Tag }}
+                {{ else if gt .Height $.CurrentBlockHeight }}
+                <button style="border: none; background: none; padding: 0; cursor: pointer; color: #ff9500" id="version-alert" data-height="{{ .Height }}" data-tooltip="Click to add the version tag at this height">➕ </button>
                 {{ else }}
-                <div style="border-bottom: none; color: #ff9500" data-tooltip="Without version tag Blazar will ignore the upgrade">⚠ </div>
+                <div style="border-bottom: none; color: #ff9500" data-tooltip="Upgrade has been skipped due to lack of version tag">⚠ </div>
                 {{ end }}
                 </th>
                 <th scope="col">{{ $element.Network }}</th>
