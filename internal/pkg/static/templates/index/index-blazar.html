@@ -403,7 +403,7 @@
                 {{ if $element.Tag }}
                 {{ $element.Tag }}
                 {{ else if gt .Height $.CurrentBlockHeight }}
-                <div style="border-bottom: none; cursor: pointer; color: #ff9500" id="version-alert" data-height="{{ .Height }}" data-tooltip="Click to add the version tag at this height">➕ </div>
+                <button style="border: none; background: none; padding: 0; cursor: pointer; color: #ff9500" id="version-alert" data-height="{{ .Height }}" data-tooltip="Click to add the version tag at this height">➕ </button>
                 {{ else }}
                 <div style="border-bottom: none; color: #ff9500" data-tooltip="Upgrade has been skipped due to lack of version tag">⚠ </div>
                 {{ end }}
