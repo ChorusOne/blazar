@@ -104,7 +104,7 @@ func (cc *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
 		if err2 != nil {
 			return 0, errors.Wrapf(err, "failed to get latest block & status")
 		}
-		return status.Result.SyncInfo.LatestBlockHeight, nil
+		return status.SyncInfo.LatestBlockHeight, nil
 	}
 
 	if res.SdkBlock != nil {
@@ -166,19 +166,17 @@ func (cc *Client) GetProposalsV1beta1(ctx context.Context) (v1beta1.Proposals, e
 }
 
 type StatusResponse struct {
-	Result struct {
-		ValidatorInfo struct {
-			Address     string `json:"address"`
-			VotingPower uint64 `json:"voting_power,string"`
-		} `json:"validator_info"`
-		NodeInfo struct {
-			Network string `json:"network"`
-		} `json:"node_info"`
-		SyncInfo struct {
-			LatestBlockTime   string `json:"latest_block_time"`
-			LatestBlockHeight int64  `json:"latest_block_height,string"`
-		} `json:"sync_info"`
-	} `json:"result"`
+	ValidatorInfo struct {
+		Address     string `json:"address"`
+		VotingPower uint64 `json:"voting_power,string"`
+	} `json:"validator_info"`
+	NodeInfo struct {
+		Network string `json:"network"`
+	} `json:"node_info"`
+	SyncInfo struct {
+		LatestBlockTime   string `json:"latest_block_time"`
+		LatestBlockHeight int64  `json:"latest_block_height,string"`
+	} `json:"sync_info"`
 }
 
 func (cc *Client) GetStatus(ctx context.Context) (*StatusResponse, error) {
@@ -203,11 +201,14 @@ func (cc *Client) GetStatus(ctx context.Context) (*StatusResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	var statusResp StatusResponse
+	var statusResp struct {
+		Result StatusResponse `json:"result"`
+	}
+
 	if err := json.NewDecoder(resp.Body).Decode(&statusResp); err != nil {
 		return nil, errors.Wrapf(err, "failed to decode JSON")
 	}
-	return &statusResp, nil
+	return &statusResp.Result, nil
 }
 
 func (cc *Client) NodeInfo(ctx context.Context) (*tmservice.GetNodeInfoResponse, error) {

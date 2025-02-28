@@ -136,8 +136,8 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to get status response")
 	}
 
-	d.chainID = status.Result.NodeInfo.Network
-	d.validatorAddress = status.Result.ValidatorInfo.Address
+	d.chainID = status.NodeInfo.Network
+	d.validatorAddress = status.ValidatorInfo.Address
 
 	// display information about the node
 	if cfg.Compose.EnvPrefix == "" {
@@ -160,21 +160,21 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to validate docker compose settings")
 	}
 
-	d.currHeight = status.Result.SyncInfo.LatestBlockHeight
-	logger.Infof("Observed latest block height: %d", d.currHeight)
-	d.currHeightTime, err = time.Parse(time.RFC3339Nano, status.Result.SyncInfo.LatestBlockTime)
+	logger.Infof("Observed latest block height: %d", status.SyncInfo.LatestBlockHeight)
+	d.currHeight = status.SyncInfo.LatestBlockHeight
+	d.currHeightTime, err = time.Parse(time.RFC3339Nano, status.SyncInfo.LatestBlockTime)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse latest block time from status endpoint")
 	}
 	d.startupHeight = d.currHeight
 
-	logger.Infof("Observed node address: %s", status.Result.ValidatorInfo.Address)
-	d.nodeAddress, err = hex.DecodeString(status.Result.ValidatorInfo.Address)
+	logger.Infof("Observed node address: %s", status.ValidatorInfo.Address)
+	d.nodeAddress, err = hex.DecodeString(status.ValidatorInfo.Address)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse node address from status endpoint")
 	}
 
-	valVP := status.Result.ValidatorInfo.VotingPower
+	valVP := status.ValidatorInfo.VotingPower
 
 	// test consensus state endpoint
 	logger.Info("Attempting to get consensus state")
