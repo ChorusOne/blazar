@@ -76,7 +76,7 @@ func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client,
 
 	// subscribe call hangs if the node is not running, this at least prevents
 	// the watcher from hanging at the start
-	if _, err := cosmosClient.GetCometbftClient().Status(ctx); err != nil {
+	if _, err := cosmosClient.GetStatus(ctx); err != nil {
 		return nil, errors.Wrapf(err, "failed to get cometbft status")
 	}
 

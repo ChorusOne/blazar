@@ -25,6 +25,7 @@ func (d *Daemon) preUpgradeChecks(
 	cfg *config.PreUpgrade,
 	serviceName string,
 	upgrade *urproto.Upgrade,
+	networkName string,
 ) (int64, error) {
 	ctx = notification.WithUpgradeHeight(ctx, upgrade.Height)
 	logger := log.FromContext(ctx)
@@ -38,7 +39,7 @@ func (d *Daemon) preUpgradeChecks(
 	if currStep == urproto.UpgradeStep_MONITORING {
 		logger.Infof(
 			"Detected upcoming upgrade (type: %s, tag: %s, chain: %s) Current height: %d, upgrade height: %d",
-			upgrade.Type, upgrade.Tag, d.nodeInfo.DefaultNodeInfo.Network, currHeight, upgrade.Height,
+			upgrade.Type, upgrade.Tag, networkName, currHeight, upgrade.Height,
 		).Notify(ctx)
 
 		if len(cfg.Enabled) == 0 {

@@ -2,9 +2,11 @@ package cosmos
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -14,7 +16,6 @@ import (
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cometbft "github.com/cometbft/cometbft/rpc/client/http"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -99,7 +100,11 @@ func (cc *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
 
 	res, err := cc.tmClient.GetLatestBlock(ctx, &tmservice.GetLatestBlockRequest{}, cc.callOptions...)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get latest block")
+		status, err2 := cc.GetStatus(ctx)
+		if err2 != nil {
+			return 0, errors.Wrapf(err, "failed to get latest block & status")
+		}
+		return status.SyncInfo.LatestBlockHeight, nil
 	}
 
 	if res.SdkBlock != nil {
@@ -160,12 +165,50 @@ func (cc *Client) GetProposalsV1beta1(ctx context.Context) (v1beta1.Proposals, e
 	return proposals, nil
 }
 
-func (cc *Client) GetStatus(ctx context.Context) (*ctypes.ResultStatus, error) {
-	response, err := cc.cometbftClient.Status(ctx)
+type StatusResponse struct {
+	ValidatorInfo struct {
+		Address     string `json:"address"`
+		VotingPower uint64 `json:"voting_power,string"`
+	} `json:"validator_info"`
+	NodeInfo struct {
+		Network string `json:"network"`
+	} `json:"node_info"`
+	SyncInfo struct {
+		LatestBlockTime   string `json:"latest_block_time"`
+		LatestBlockHeight int64  `json:"latest_block_height,string"`
+	} `json:"sync_info"`
+}
+
+func (cc *Client) GetStatus(ctx context.Context) (*StatusResponse, error) {
+	// This code is manually deserializing the raw JSON output of the /status endpoint
+	// instead of using `cc.cometbftClient.Status(ctx)` because certain chains
+	// are using BLS12-381 keys, which are not part of the support enum for key format
+	// on the cometbft proto definitions, defined at
+	// https://github.com/cometbft/cometbft/blob/v0.38.17/proto/tendermint/crypto/keys.proto#L13
+	// BLS12-381 support was added to the enum on 1.0.0, in this commit
+	// https://github.com/cometbft/cometbft/commit/354c6bedd35a5825accb9defd60d65e27c6de643
+	// but 1.0.0 is not yet usable in this context; cosmossdk needs to release a new version for it
+
+	statusURL := strings.Replace(fmt.Sprintf("%s/status", cc.cometbftClient.Remote()), "tcp://", "http://", 1)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get status")
+		return nil, errors.Wrapf(err, "failed to create request")
 	}
-	return response, nil
+	c := http.Client{}
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to perform HTTP request")
+	}
+	defer resp.Body.Close()
+
+	var statusResp struct {
+		Result StatusResponse `json:"result"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&statusResp); err != nil {
+		return nil, errors.Wrapf(err, "failed to decode JSON")
+	}
+	return &statusResp.Result, nil
 }
 
 func (cc *Client) NodeInfo(ctx context.Context) (*tmservice.GetNodeInfoResponse, error) {

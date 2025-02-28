@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -136,18 +137,21 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 	}
 
 	d.chainID = status.NodeInfo.Network
-	d.validatorAddress = status.ValidatorInfo.Address.String()
+	d.validatorAddress = status.ValidatorInfo.Address
 
 	// display information about the node
-	d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get node info")
-	}
-	logger.Infof("Connected to the %s node ID: %s", d.nodeInfo.ApplicationVersion.Name, d.nodeInfo.DefaultNodeInfo.DefaultNodeID)
-
-	// if the env prefix is not set, we set it to <APP_NAME>_ (e.g "GAIAD_")
 	if cfg.Compose.EnvPrefix == "" {
-		cfg.Compose.EnvPrefix = strings.ToUpper(d.nodeInfo.ApplicationVersion.AppName) + "_"
+		logger.Infof("No EnvPrefix found in config, fetching NodeInfo from GRPC")
+		d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get node info")
+		}
+		logger.Infof("Connected to the %s node ID: %s", d.nodeInfo.ApplicationVersion.Name, d.nodeInfo.DefaultNodeInfo.DefaultNodeID)
+
+		// if the env prefix is not set, we set it to <APP_NAME>_ (e.g "GAIAD_")
+		if cfg.Compose.EnvPrefix == "" {
+			cfg.Compose.EnvPrefix = strings.ToUpper(d.nodeInfo.ApplicationVersion.AppName) + "_"
+		}
 	}
 	logger.Infof("Using env prefix: %s", cfg.Compose.EnvPrefix)
 
@@ -158,11 +162,19 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 
 	logger.Infof("Observed latest block height: %d", status.SyncInfo.LatestBlockHeight)
 	d.currHeight = status.SyncInfo.LatestBlockHeight
-	d.currHeightTime = status.SyncInfo.LatestBlockTime
+	d.currHeightTime, err = time.Parse(time.RFC3339Nano, status.SyncInfo.LatestBlockTime)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse latest block time from status endpoint")
+	}
 	d.startupHeight = d.currHeight
 
-	logger.Infof("Observed node address: %s", status.ValidatorInfo.Address.String())
-	d.nodeAddress = status.ValidatorInfo.Address
+	logger.Infof("Observed node address: %s", status.ValidatorInfo.Address)
+	d.nodeAddress, err = hex.DecodeString(status.ValidatorInfo.Address)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse node address from status endpoint")
+	}
+
+	valVP := status.ValidatorInfo.VotingPower
 
 	// test consensus state endpoint
 	logger.Info("Attempting to get consensus state")
@@ -171,8 +183,8 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to get consensus state")
 	}
 	logger.Infof(
-		"Total VP: %d, Node VP: %d, Node share: %.2f", pvp.TotalVP, status.ValidatorInfo.VotingPower,
-		(float64(status.ValidatorInfo.VotingPower)/float64(pvp.TotalVP))*100,
+		"Total VP: %d, Node VP: %d, Node share: %.2f", pvp.TotalVP, valVP,
+		(float64(valVP)/float64(pvp.TotalVP))*100,
 	)
 
 	// fetch future upgrades
@@ -385,7 +397,7 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 
 				// perform pre upgrade upgrade checks if we are close to the upgrade height
 				if futureUpgrade.Height < d.currHeight+cfg.Checks.PreUpgrade.Blocks {
-					newHeight, preErr := d.preUpgradeChecks(ctx, d.currHeight, d.stateMachine, d.dcc, &cfg.Compose, &cfg.Checks.PreUpgrade, cfg.ComposeService, futureUpgrade)
+					newHeight, preErr := d.preUpgradeChecks(ctx, d.currHeight, d.stateMachine, d.dcc, &cfg.Compose, &cfg.Checks.PreUpgrade, cfg.ComposeService, futureUpgrade, cfg.UpgradeRegistry.Network)
 					if preErr != nil {
 						d.MustSetStatus(futureUpgrade.Height, urproto.UpgradeStatus_FAILED)
 					}
