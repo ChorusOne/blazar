@@ -104,11 +104,7 @@ func (cc *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
 		if err2 != nil {
 			return 0, errors.Wrapf(err, "failed to get latest block & status")
 		}
-		height, err := strconv.ParseInt(status.Result.SyncInfo.LatestBlockHeight, 10, 64)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to parse height from status")
-		}
-		return height, nil
+		return status.Result.SyncInfo.LatestBlockHeight, nil
 	}
 
 	if res.SdkBlock != nil {
@@ -173,14 +169,14 @@ type StatusResponse struct {
 	Result struct {
 		ValidatorInfo struct {
 			Address     string `json:"address"`
-			VotingPower string `json:"voting_power"`
+			VotingPower uint64 `json:"voting_power,string"`
 		} `json:"validator_info"`
 		NodeInfo struct {
 			Network string `json:"network"`
 		} `json:"node_info"`
 		SyncInfo struct {
 			LatestBlockTime   string `json:"latest_block_time"`
-			LatestBlockHeight string `json:"latest_block_height"`
+			LatestBlockHeight int64  `json:"latest_block_height,string"`
 		} `json:"sync_info"`
 	} `json:"result"`
 }

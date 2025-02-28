@@ -141,7 +141,7 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 
 	// display information about the node
 	if cfg.Compose.EnvPrefix == "" {
-		// FIXME: this will break checks that look at nodeInfo
+		logger.Infof("No EnvPrefix found in config, fetching NodeInfo from GRPC")
 		d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get node info")
@@ -160,15 +160,21 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to validate docker compose settings")
 	}
 
-	d.currHeight, err = strconv.ParseInt(status.Result.SyncInfo.LatestBlockHeight, 10, 64)
+	d.currHeight = status.Result.SyncInfo.LatestBlockHeight
 	logger.Infof("Observed latest block height: %d", d.currHeight)
 	d.currHeightTime, err = time.Parse(time.RFC3339Nano, status.Result.SyncInfo.LatestBlockTime)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse latest block time from status endpoint")
+	}
 	d.startupHeight = d.currHeight
 
 	logger.Infof("Observed node address: %s", status.Result.ValidatorInfo.Address)
 	d.nodeAddress, err = hex.DecodeString(status.Result.ValidatorInfo.Address)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse node address from status endpoint")
+	}
 
-	valVP, err := strconv.ParseInt(status.Result.ValidatorInfo.VotingPower, 10, 64)
+	valVP := status.Result.ValidatorInfo.VotingPower
 
 	// test consensus state endpoint
 	logger.Info("Attempting to get consensus state")
