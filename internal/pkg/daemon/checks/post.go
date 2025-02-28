@@ -193,18 +193,22 @@ func HasAddressSigned(address bytes.HexBytes, rs RoundState) (bool, error) {
 	return false, nil
 }
 
-func CheckBlockSignedBy(address bytes.HexBytes, height int64, consensusState json.RawMessage) (CheckBlockStatus, error) {
+func CheckBlockSignedBy(address bytes.HexBytes, heightAfterUpgrade int64, consensusState json.RawMessage) (CheckBlockStatus, error) {
 	var rs RoundState
 	if err := json.Unmarshal(consensusState, &rs); err != nil {
 		return InvalidBlockState, errors.Wrapf(err, "Error in parsing consensus state: %v, will retry")
 	}
+
 	parts := strings.Split(rs.HeightRoundStep, "/")
 	currentHeight, err := strconv.ParseInt(parts[0], 10, 64)
 	if err != nil {
 		return InvalidBlockState, errors.Wrapf(err, "Error in parsing height from consensus state")
 	}
 
-	if currentHeight > height {
+	// when the chain halts at height N, the height returned in consensus state should be N+1
+	// because the _next_ block is being voted on
+	// so we should return BlockSkipped only if the state goes further than that
+	if currentHeight > heightAfterUpgrade {
 		return BlockSkipped, nil
 	}
 
@@ -219,7 +223,7 @@ func CheckBlockSignedBy(address bytes.HexBytes, height int64, consensusState jso
 	return BlockNotSignedYet, nil
 }
 
-func NextBlockSignedPostCheck(ctx context.Context, cosmosClient *cosmos.Client, postUpgradeChecks *config.FirstBlockVoted, observedHeight int64) error {
+func NextBlockSignedPostCheck(ctx context.Context, cosmosClient *cosmos.Client, postUpgradeChecks *config.FirstBlockVoted, upgradeHeight int64) error {
 	logger := log.FromContext(ctx)
 
 	ticker := time.NewTicker(postUpgradeChecks.PollInterval)
@@ -232,7 +236,7 @@ func NextBlockSignedPostCheck(ctx context.Context, cosmosClient *cosmos.Client, 
 	}
 
 	nodeAddress := status.ValidatorInfo.Address
-	logger.Infof("Post upgrade check 2: Waiting to sign the first block after upgrade=%d, address=%s", observedHeight, nodeAddress.String()).Notify(ctx)
+	logger.Infof("Post upgrade check 2: Waiting to sign the first block after upgrade=%d, address=%s", upgradeHeight, nodeAddress.String()).Notify(ctx)
 	if status.ValidatorInfo.VotingPower == 0 {
 		logger.Info("Post upgrade check 2: skipping signature check, as VP is 0").Notify(ctx)
 		return nil
@@ -247,7 +251,7 @@ func NextBlockSignedPostCheck(ctx context.Context, cosmosClient *cosmos.Client, 
 				logger.Err(err).Warn("Error in getting consensus state, will retry")
 				continue
 			}
-			state, err := CheckBlockSignedBy(nodeAddress, observedHeight, consensusState.RoundState)
+			state, err := CheckBlockSignedBy(nodeAddress, upgradeHeight+1, consensusState.RoundState)
 			if err != nil {
 				logger.Err(err).Warn("Error checking if we voted, will retry")
 				continue
@@ -262,7 +266,7 @@ func NextBlockSignedPostCheck(ctx context.Context, cosmosClient *cosmos.Client, 
 			case BlockNotSignedYet:
 				continue
 			default:
-				panic(fmt.Sprintf("programming error: state from block at %d was %d, which is illegal", observedHeight, state))
+				panic(fmt.Sprintf("programming error: state from block at %d was %d, which is illegal", upgradeHeight, state))
 			}
 		case <-timeout.C:
 			return fmt.Errorf("post-upgrade check for fist block signature timed out after %s, assuming upgrade failed", postUpgradeChecks.Timeout.String())
