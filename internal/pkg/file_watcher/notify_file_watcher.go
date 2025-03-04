@@ -62,6 +62,8 @@ func (fw *NotifyFileWatcher) watchFile(logger *log.MultiLogger, filePath string)
 			}
 
 			if event.Name == filePath {
+				logger.Debugf("File detected fsnotify event %v", event)
+
 				var newEvent NewFileChangeEvent
 
 				switch {
@@ -74,7 +76,7 @@ func (fw *NotifyFileWatcher) watchFile(logger *log.MultiLogger, filePath string)
 				}
 
 				if newEvent.Event != 0 {
-					logger.Debugf("File watcher detected event %v", newEvent.Event)
+					logger.Debugf("File watcher sent event %v", newEvent.Event)
 					fw.changeEvents <- newEvent
 				}
 			}
