@@ -51,6 +51,8 @@ func NewNotifyFileWatcher(logger *log.MultiLogger, filePath string) (bool, *Noti
 }
 
 func (fw *NotifyFileWatcher) watchFile(logger *log.MultiLogger, filePath string) {
+	logger.Debugf("File watcher started on: %s", filePath)
+
 	defer close(fw.changeEvents)
 	for {
 		select {
@@ -72,6 +74,7 @@ func (fw *NotifyFileWatcher) watchFile(logger *log.MultiLogger, filePath string)
 				}
 
 				if newEvent.Event != 0 {
+					logger.Debugf("File watcher detected event %v", newEvent.Event)
 					fw.changeEvents <- newEvent
 				}
 			}
