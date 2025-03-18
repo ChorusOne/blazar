@@ -1,9 +1,11 @@
 package cosmos
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"net"
 	"net/http"
@@ -200,13 +202,30 @@ func (cc *Client) GetStatus(ctx context.Context) (*StatusResponse, error) {
 		return nil, errors.Wrapf(err, "failed to perform HTTP request")
 	}
 	defer resp.Body.Close()
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read HTTP response")
+	}
 
 	var statusResp struct {
 		Result StatusResponse `json:"result"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&statusResp); err != nil {
+	r := bytes.NewReader(buf)
+	if err := json.NewDecoder(r).Decode(&statusResp); err != nil {
 		return nil, errors.Wrapf(err, "failed to decode JSON")
+	}
+
+	if statusResp.Result.NodeInfo.Network == "" {
+		// sometimes the top-level 'result' key is missing;
+		// in particular, sei uses an old, forked version of tendermint
+		// that exhibits this behavior
+		r = bytes.NewReader(buf)
+		var ret StatusResponse
+		if err := json.NewDecoder(r).Decode(&ret); err != nil {
+			return nil, errors.Wrapf(err, "failed to decode JSON")
+		}
+		return &ret, nil
 	}
 	return &statusResp.Result, nil
 }
