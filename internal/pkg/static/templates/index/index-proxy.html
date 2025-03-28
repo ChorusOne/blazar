@@ -105,7 +105,8 @@
                 <th scope="col">
                 {{ if $pair.LastUpgrade.Tag }}
                 {{ $pair.LastUpgrade.Tag }}
-                {{ else }}
+                <!-- status 6 is expired, status 7 is cancelled, see upgrades_registry.proto -->
+                {{ else if and (ne $pair.LastUpgrade.Status 6) (ne $pair.LastUpgrade.Status 7) }}
                 <div style="border-bottom: none; color: #ff9500" data-tooltip="Without version tag Blazar will ignore the upgrade">⚠ </div>
                 {{ end }}
                 </th>
