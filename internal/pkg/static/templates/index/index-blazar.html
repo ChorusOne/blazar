@@ -413,8 +413,10 @@
                           data-height="{{ .Height }}"
                           data-tooltip="Click to add the version tag at this height"
                           onclick="handleButtonAddUpgrade(this)">➕
-                  </button>                {{ else }}
-                <div style="border-bottom: none; color: #ff9500" data-tooltip="Upgrade has been skipped due to lack of version tag">⚠ </div>
+                  </button>
+                <!-- status 5 is failed, see upgrades_registry.proto -->
+                {{ else if eq $element.Status 5 }}
+                <div style="border-bottom: none; color: #ff9500" data-tooltip="Upgrade failed">⚠ </div>
                 {{ end }}
                 </th>
                 <th scope="col">{{ $element.Network }}</th>
