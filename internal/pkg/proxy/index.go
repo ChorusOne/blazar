@@ -27,83 +27,10 @@ type instancePair struct {
 }
 
 func IndexHandler(cfg *Config, proxyMetrics *metrics.ProxyMetrics) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
-		mutex := sync.Mutex{}
-		networkUpgrades := make(map[string][]instancePair)
+	return func(w http.ResponseWriter, r *http.Request) {
 
 		start := time.Now()
-
-		var wg sync.WaitGroup
-		for _, instance := range cfg.Instances {
-			wg.Add(1)
-
-			if _, ok := networkUpgrades[instance.Network]; !ok {
-				networkUpgrades[instance.Network] = []instancePair{}
-			}
-
-			go func() {
-				defer wg.Done()
-
-				withError := func(err error) {
-					mutex.Lock()
-					defer mutex.Unlock()
-
-					networkUpgrades[instance.Network] = append(
-						networkUpgrades[instance.Network],
-						instancePair{
-							LastUpgrade: nil,
-							Instance:    instance,
-							Error:       err,
-						},
-					)
-				}
-
-				address := net.JoinHostPort(instance.Host, strconv.Itoa(instance.GRPCPort))
-				conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
-				if err != nil {
-					withError(err)
-					return
-				}
-
-				c := urproto.NewUpgradeRegistryClient(conn)
-				limit := int64(1)
-				listUpgradesResponse, err := c.ListUpgrades(context.Background(), &urproto.ListUpgradesRequest{
-					DisableCache: false,
-					Limit:        &limit,
-				})
-				if err != nil {
-					withError(err)
-					return
-				}
-
-				var lastUpgrade *urproto.Upgrade
-				if len(listUpgradesResponse.Upgrades) > 0 {
-					lastUpgrade = listUpgradesResponse.Upgrades[0]
-				}
-
-				if lastUpgrade != nil && lastUpgrade.Network != instance.Network {
-					err := fmt.Errorf(
-						"instance %s returned upgrade for network %s, expected %s",
-						instance.Host, lastUpgrade.Network, instance.Network,
-					)
-					withError(err)
-					return
-				}
-
-				mutex.Lock()
-				defer mutex.Unlock()
-
-				networkUpgrades[instance.Network] = append(
-					networkUpgrades[instance.Network],
-					instancePair{
-						LastUpgrade: lastUpgrade,
-						Instance:    instance,
-					},
-				)
-			}()
-		}
-
-		wg.Wait()
+		networkUpgrades := CheckInstances(r.Context(), cfg, proxyMetrics)
 		end := time.Now()
 
 		noInstances, noActive, noExecuting, noExpired, noCompleted, noErrors := uint(0), uint(0), uint(0), uint(0), uint(0), uint(0)
@@ -189,4 +116,88 @@ func IndexHandler(cfg *Config, proxyMetrics *metrics.ProxyMetrics) http.HandlerF
 			return
 		}
 	}
+}
+
+func CheckInstances(_ context.Context, cfg *Config, proxyMetrics *metrics.ProxyMetrics) map[string][]instancePair {
+	var (
+		mutex           sync.Mutex
+		networkUpgrades = make(map[string][]instancePair)
+		wg              sync.WaitGroup
+	)
+
+	for _, instance := range cfg.Instances {
+		wg.Add(1)
+
+		if _, ok := networkUpgrades[instance.Network]; !ok {
+			networkUpgrades[instance.Network] = []instancePair{}
+		}
+
+		go func(instance Instance) {
+			defer wg.Done()
+
+			withError := func(err error) {
+				mutex.Lock()
+				defer mutex.Unlock()
+
+				networkUpgrades[instance.Network] = append(
+					networkUpgrades[instance.Network],
+					instancePair{
+						LastUpgrade: nil,
+						Instance:    instance,
+						Error:       err,
+					},
+				)
+
+				proxyMetrics.ConnErrs.WithLabelValues(
+					instance.Name, instance.Host,
+					strconv.Itoa(instance.HTTPPort),
+					strconv.Itoa(instance.GRPCPort),
+					instance.Network,
+				).Inc()
+			}
+
+			address := net.JoinHostPort(instance.Host, strconv.Itoa(instance.GRPCPort))
+			conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			if err != nil {
+				withError(err)
+				return
+			}
+			defer conn.Close()
+
+			c := urproto.NewUpgradeRegistryClient(conn)
+			limit := int64(1)
+			resp, err := c.ListUpgrades(context.Background(), &urproto.ListUpgradesRequest{
+				DisableCache: false,
+				Limit:        &limit,
+			})
+			if err != nil {
+				withError(err)
+				return
+			}
+
+			var lastUpgrade *urproto.Upgrade
+			if len(resp.Upgrades) > 0 {
+				lastUpgrade = resp.Upgrades[0]
+			}
+
+			if lastUpgrade != nil && lastUpgrade.Network != instance.Network {
+				withError(fmt.Errorf("instance %s returned upgrade for network %s, expected %s",
+					instance.Host, lastUpgrade.Network, instance.Network,
+				))
+				return
+			}
+
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			networkUpgrades[instance.Network] = append(networkUpgrades[instance.Network], instancePair{
+				LastUpgrade: lastUpgrade,
+				Instance:    instance,
+				Error:       nil,
+			})
+		}(instance)
+	}
+
+	wg.Wait()
+	return networkUpgrades
 }
