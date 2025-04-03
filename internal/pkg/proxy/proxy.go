@@ -41,7 +41,7 @@ func (p *Proxy) ListenAndServe(ctx context.Context, cfg *Config) error {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				CheckInstances(ctx, cfg, proxyMetrics)
+				checkInstances(ctx, cfg, proxyMetrics)
 			}
 		}
 	}()

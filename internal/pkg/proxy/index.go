@@ -28,9 +28,8 @@ type instancePair struct {
 
 func IndexHandler(cfg *Config, proxyMetrics *metrics.ProxyMetrics) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		start := time.Now()
-		networkUpgrades := CheckInstances(r.Context(), cfg, proxyMetrics)
+		networkUpgrades := checkInstances(r.Context(), cfg, proxyMetrics)
 		end := time.Now()
 
 		noInstances, noActive, noExecuting, noExpired, noCompleted, noErrors := uint(0), uint(0), uint(0), uint(0), uint(0), uint(0)
@@ -118,7 +117,7 @@ func IndexHandler(cfg *Config, proxyMetrics *metrics.ProxyMetrics) http.HandlerF
 	}
 }
 
-func CheckInstances(_ context.Context, cfg *Config, proxyMetrics *metrics.ProxyMetrics) map[string][]instancePair {
+func checkInstances(_ context.Context, cfg *Config, proxyMetrics *metrics.ProxyMetrics) map[string][]instancePair {
 	var (
 		mutex           sync.Mutex
 		networkUpgrades = make(map[string][]instancePair)

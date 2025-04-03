@@ -37,7 +37,7 @@ func (cfg *Config) ValidateAll() error {
 		return errors.New("no instances specified")
 	}
 	if cfg.PollInterval <= time.Duration(0) {
-		return errors.New(fmt.Sprintf("poll interval not specified or invalid value, got value: %s", cfg.PollInterval))
+		return fmt.Errorf("poll interval not specified or invalid value, got value: %s", cfg.PollInterval)
 	}
 	if cfg.Host == "" {
 		return errors.New("listen host not specified")
