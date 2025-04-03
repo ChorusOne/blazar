@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"blazar/internal/pkg/log"
 	"blazar/internal/pkg/metrics"
@@ -30,6 +31,20 @@ func (p *Proxy) ListenAndServe(ctx context.Context, cfg *Config) error {
 	proxyMetrics := metrics.NewProxyMetrics()
 	mux.HandleFunc("/", IndexHandler(cfg, proxyMetrics))
 	mux.Handle("/metrics", promhttp.Handler())
+
+	go func() {
+		ticker := time.NewTicker(cfg.PollInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				CheckInstances(ctx, cfg, proxyMetrics)
+			}
+		}
+	}()
 
 	server := &http.Server{
 		Addr:    httpAddr,
