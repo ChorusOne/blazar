@@ -69,7 +69,7 @@ env-prefix = ""
 # Blazar runs some pre-upgrade checks automatically when the chain height crosses (upgrade-height - blocks)
 blocks = 200
 # Which checks to enable; all options are listed here
-enabled = ["PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT"]
+enabled = ["CHECK_DOTENV_FILE", "PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT"]
 
 # [OPTIONAL] Omit this section if you don't want this check
 # Sets up the HALT_HEIGHT env variable that makes the node stop at a certain height.

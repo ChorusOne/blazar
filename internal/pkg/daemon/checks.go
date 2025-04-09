@@ -69,6 +69,20 @@ func (d *Daemon) preUpgradeChecks(
 		return 0, nil
 	}
 
+	if slices.Contains(cfg.Enabled, checksproto.PreCheck_READ_IMAGE_VERSION.String()) {
+		status := sm.GetPreCheckStatus(upgrade.Height, checksproto.PreCheck_READ_IMAGE_VERSION)
+		if status != checksproto.CheckStatus_FINISHED {
+			d.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_READ_IMAGE_VERSION, checksproto.CheckStatus_RUNNING)
+			logger.Infof(
+				"Pre upgrade check: %s Checking if Blazar can read the image version, service name: %s",
+				checksproto.PreCheck_READ_IMAGE_VERSION.String(), serviceName,
+			).Notify(ctx)
+			_, err := d.dcc.GetVersionForService(serviceName)
+			d.reportPreUpgradeVersionCheck(ctx, upgrade, err)
+			d.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_READ_IMAGE_VERSION, checksproto.CheckStatus_FINISHED)
+		}
+	}
+
 	if slices.Contains(cfg.Enabled, checksproto.PreCheck_PULL_DOCKER_IMAGE.String()) {
 		status := sm.GetPreCheckStatus(upgrade.Height, checksproto.PreCheck_PULL_DOCKER_IMAGE)
 		if status != checksproto.CheckStatus_FINISHED {
@@ -194,6 +208,18 @@ func (d *Daemon) reportPreUpgradeRoutine(ctx context.Context, upgrade *urproto.U
 		logger.Err(err).Warn(msg).Notify(ctx)
 	} else {
 		logger.Infof("Upgrade image: %s\nI'll attempt to upgrade when upgrade height is hit", newImage).Notify(ctx)
+	}
+}
+
+func (d *Daemon) reportPreUpgradeVersionCheck(ctx context.Context, upgrade *urproto.Upgrade, err error) {
+	ctx = notification.WithUpgradeHeight(ctx, upgrade.Height)
+	logger := log.FromContext(ctx)
+
+	if err != nil {
+		msg := "Error performing pre upgrade check. I'll not be able to perform the upgrade, please check the compose file"
+		logger.Err(err).Warn(msg).Notify(ctx)
+	} else {
+		logger.Infof("Env file is\nI'll attempt to upgrade when upgrade height is hit").Notify(ctx)
 	}
 }
 
