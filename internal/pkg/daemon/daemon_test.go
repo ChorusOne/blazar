@@ -470,6 +470,7 @@ func runChain(t *testing.T, metrics *metrics.Metrics, tempDir, serviceName strin
 
 func requirePreCheckStatus(t *testing.T, sm *state_machine.StateMachine, height int64) {
 	require.Equal(t, checksproto.CheckStatus_FINISHED, sm.GetPreCheckStatus(height, checksproto.PreCheck_PULL_DOCKER_IMAGE))
+	require.Equal(t, checksproto.CheckStatus_FINISHED, sm.GetPreCheckStatus(height, checksproto.PreCheck_READ_IMAGE_VERSION))
 	require.Equal(t, checksproto.CheckStatus_FINISHED, sm.GetPreCheckStatus(height, checksproto.PreCheck_SET_HALT_HEIGHT))
 }
 
@@ -536,7 +537,7 @@ func generateConfig(t *testing.T, tempDir, serviceName string, grpcPort, cometbf
 		},
 		Checks: config.Checks{
 			PreUpgrade: config.PreUpgrade{
-				Enabled: []string{"PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT"},
+				Enabled: []string{"PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT", "READ_IMAGE_VERSION"},
 				// as soon as possible
 				Blocks: 100,
 				SetHaltHeight: &config.SetHaltHeight{

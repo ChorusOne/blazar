@@ -219,7 +219,7 @@ func (d *Daemon) reportPreUpgradeVersionCheck(ctx context.Context, upgrade *urpr
 		msg := "Error performing pre upgrade check. I'll not be able to perform the upgrade, please check the compose file"
 		logger.Err(err).Warn(msg).Notify(ctx)
 	} else {
-		logger.Infof("Env file is\nI'll attempt to upgrade when upgrade height is hit").Notify(ctx)
+		logger.Infof("Image version read correctly\nI'll attempt to upgrade when upgrade height is hit").Notify(ctx)
 	}
 }
 
