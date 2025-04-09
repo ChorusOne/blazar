@@ -136,6 +136,10 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 		return errors.Wrapf(err, "failed to get status response")
 	}
 
+	if status.NodeInfo.Network != cfg.ChainID {
+		return fmt.Errorf("chain ID mismatch, expected: %s, got: %s", cfg.ChainID, status.NodeInfo.Network)
+	}
+
 	d.chainID = status.NodeInfo.Network
 	d.validatorAddress = status.ValidatorInfo.Address
 

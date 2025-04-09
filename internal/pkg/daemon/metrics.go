@@ -53,7 +53,7 @@ func (d *Daemon) updateMetrics() {
 		// Merge all label values into a single slice
 		labelValues := append([]string{
 			upgradeHeight, upgrade.Name, status.String(),
-			d.stateMachine.GetStep(upgrade.Height).String(), d.chainID, d.validatorAddress, upgrade.Tag,
+			d.stateMachine.GetStep(upgrade.Height).String(), d.validatorAddress, upgrade.Tag,
 		}, preChecksStatus...)
 		labelValues = append(labelValues, postChecksStatus...)
 

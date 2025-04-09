@@ -13,6 +13,9 @@ upgrade-mode = "compose-file"
 
 # Absolute path to the chain home directory on the host system
 chain-home = "<path>"
+# Chain ID reported by the Status endpoint
+chain-id = "<chain_id>"
+
 # Info log level (0 for debug, -1 for trace)
 # Refer to https://pkg.go.dev/github.com/rs/zerolog#readme-leveled-logging for all options
 log-level = 1

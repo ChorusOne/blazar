@@ -171,6 +171,7 @@ type Config struct {
 	Host             string                  `toml:"host"`
 	GrpcPort         uint16                  `toml:"grpc-port"`
 	HTTPPort         uint16                  `toml:"http-port"`
+	ChainID          string                  `toml:"chain-id"`
 	Watchers         Watchers                `toml:"watchers"`
 	Clients          Clients                 `toml:"clients"`
 	Compose          ComposeCli              `toml:"compose-cli"`
@@ -446,6 +447,10 @@ func (cfg *Config) ValidateAll() error {
 
 	if err := cfg.ValidateChainHome(); err != nil {
 		return err
+	}
+
+	if cfg.ChainID == "" {
+		return errors.New("chain-id cannot be empty")
 	}
 
 	if cfg.LogLevel < -1 || cfg.LogLevel > 7 {

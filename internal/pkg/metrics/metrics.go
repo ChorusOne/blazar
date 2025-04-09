@@ -26,8 +26,8 @@ type Metrics struct {
 	NotifErrs          prometheus.Counter
 }
 
-func NewMetrics(composeFile, hostname, version string) *Metrics {
-	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version}
+func NewMetrics(composeFile, hostname, version, chainID string) *Metrics {
+	labels := prometheus.Labels{"hostname": hostname, "compose_file": composeFile, "version": version, "chain_id": chainID}
 
 	preChecks := make([]string, 0, len(checksproto.PreCheck_value))
 	for pc := range checksproto.PreCheck_value {
@@ -39,7 +39,7 @@ func NewMetrics(composeFile, hostname, version string) *Metrics {
 		postChecks = append(postChecks, pc)
 	}
 
-	blocksToUpgradeLabels := []string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "chain_id", "validator_address", "upgrade_tag"}
+	blocksToUpgradeLabels := []string{"upgrade_height", "upgrade_name", "upgrade_status", "upgrade_step", "validator_address", "upgrade_tag"}
 	blocksToUpgradeLabels = append(blocksToUpgradeLabels, preChecks...)
 	blocksToUpgradeLabels = append(blocksToUpgradeLabels, postChecks...)
 
