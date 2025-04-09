@@ -371,6 +371,8 @@ func (cfg *Config) ValidatePreUpgradeChecks() error {
 			}
 		case checksproto.PreCheck_name[int32(checksproto.PreCheck_PULL_DOCKER_IMAGE)]:
 			// there is no config so nothing to check
+		case checksproto.PreCheck_name[int32(checksproto.PreCheck_READ_IMAGE_VERSION)]:
+			// there is no config so nothing to check
 		default:
 			return fmt.Errorf("unknown value in checks.pre-upgrade.enabled: %s", check)
 		}

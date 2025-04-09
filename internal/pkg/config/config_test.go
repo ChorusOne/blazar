@@ -48,7 +48,7 @@ func TestReadConfigToml(t *testing.T) {
 		},
 		Checks: Checks{
 			PreUpgrade: PreUpgrade{
-				Enabled: []string{"PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT"},
+				Enabled: []string{"READ_IMAGE_VERSION","PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT"},
 				Blocks:  200,
 				SetHaltHeight: &SetHaltHeight{
 					DelayBlocks: 0,
