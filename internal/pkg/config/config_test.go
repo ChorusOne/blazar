@@ -25,6 +25,7 @@ func TestReadConfigToml(t *testing.T) {
 		ComposeService: "<service>",
 		UpgradeMode:    UpgradeInComposeFile,
 		ChainHome:      "<path>",
+		ChainID:        "<chain_id>",
 		LogLevel:       1,
 		Host:           "0.0.0.0",
 		HTTPPort:       1234,
