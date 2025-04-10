@@ -7,6 +7,8 @@ enum PreCheck {
     PULL_DOCKER_IMAGE = 0;
     // Set the node's halt-height before non-governance coordinated upgrades
     SET_HALT_HEIGHT = 1;
+    // Try to read the image version before upgrading
+    READ_IMAGE_VERSION = 2;
 }
 
 enum PostCheck {
