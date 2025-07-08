@@ -100,6 +100,33 @@ func (dc *Client) PullImage(ctx context.Context, name string, platform string) e
 	}
 }
 
+func (dc *Client) PullImageWithRetry(ctx context.Context, name string,
+	platform string, maxRetries int, backoffDuration time.Duration) error {
+	var lastErr error
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(backoffDuration):
+			}
+		}
+
+		err := dc.PullImage(ctx, name, platform)
+		if err == nil {
+			return nil
+		}
+
+		lastErr = err
+		if attempt < maxRetries {
+			backoffDuration *= 2
+		}
+	}
+
+	return lastErr
+}
+
 func (dc *Client) IsContainerRunning(ctx context.Context, containerID string) (bool, error) {
 	if containerID == "" {
 		return false, errors.New("containerId is empty")
