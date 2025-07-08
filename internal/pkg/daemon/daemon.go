@@ -557,6 +557,10 @@ func validateComposeSettings(cfg *config.Config) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse docker compose file")
 	}
+	_, err = docker.LoadServiceVersionFile(cfg.VersionFile, cfg.ComposeService)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get service versions from compose file")
+	}
 
 	if slices.Contains(cfg.Checks.PreUpgrade.Enabled, checksproto.PreCheck_SET_HALT_HEIGHT.String()) {
 		prefix := cfg.Compose.EnvPrefix + "HALT_HEIGHT"
