@@ -485,7 +485,10 @@ func (d *Daemon) performUpgrade(
 
 	// ensure the docker image is present on the host (this should be done in a pre-check phase though). Better safe than sorry
 	var currImage, newImage string
-	currImage, newImage, err = checks.PullDockerImage(ctx, d.dcc, serviceName, upgrade.Tag, upgrade.Height)
+	// hardcoding these params to keep the function signature the same
+	maxRetries := 3
+	backoffDuration := 2 * time.Second
+	currImage, newImage, err = checks.PullDockerImage(ctx, d.dcc, serviceName, upgrade.Tag, upgrade.Height, maxRetries, backoffDuration)
 	if err != nil {
 		return err
 	}

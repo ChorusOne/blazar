@@ -54,6 +54,10 @@ func TestReadConfigToml(t *testing.T) {
 				SetHaltHeight: &SetHaltHeight{
 					DelayBlocks: 0,
 				},
+				PullDockerImage: &PullDockerImage{
+					MaxRetries:     0,
+					InitialBackoff: 0,
+				},
 			},
 			PostUpgrade: PostUpgrade{
 				Enabled: []string{"GRPC_RESPONSIVE", "CHAIN_HEIGHT_INCREASED", "FIRST_BLOCK_VOTED"},

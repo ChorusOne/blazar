@@ -3,6 +3,7 @@ package checks
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"blazar/internal/pkg/daemon/util"
 	"blazar/internal/pkg/docker"
@@ -10,7 +11,8 @@ import (
 )
 
 // return current image, upgrade image, error
-func PullDockerImage(ctx context.Context, dcc *docker.ComposeClient, serviceName, upgradeTag string, upgradeHeight int64) (string, string, error) {
+func PullDockerImage(ctx context.Context, dcc *docker.ComposeClient, serviceName,
+	upgradeTag string, upgradeHeight int64, maxRetries int, backoff time.Duration) (string, string, error) {
 	if upgradeTag == "" {
 		return "", "", fmt.Errorf("failed to check docker image, upgrade tag is empty, for upgrade height: %d", upgradeHeight)
 	}
@@ -32,7 +34,7 @@ func PullDockerImage(ctx context.Context, dcc *docker.ComposeClient, serviceName
 			return "", "", errors.Wrapf(err, "new image %s is not present on host and failed to get platform from compose file", newImage)
 		}
 
-		if err := dcc.DockerClient().PullImage(ctx, newImage, platform); err != nil {
+		if err := dcc.DockerClient().PullImageWithRetry(ctx, newImage, platform, maxRetries, backoff); err != nil {
 			return "", "", errors.Wrapf(err, "new image %s is not present on host and pull failed", newImage)
 		}
 	}

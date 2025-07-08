@@ -83,6 +83,16 @@ enabled = ["PULL_DOCKER_IMAGE", "SET_HALT_HEIGHT"]
 # This is useful if you run multiple nodes and don't want to restart them simultaneously.
 delay-blocks = 0
 
+# [OPTIONAL] Omit this section if you don't want this check
+# Pulls the docker image before executing the actual upgrade.
+# Sometimes, pulling fails due to some transient issues, e.g with DNS, or registry timing ou
+[checks.pre-upgrade.pull-docker-image]
+# Specify how many times Blazar should retry to pull the image.
+max-retries = 0
+# Specify the initial backoff duration after an image pull failure.
+# This will be squared with each failure.
+initial-backoff = "0s"
+
 # Blazar runs a post-upgrade check which involves polling a gRPC and a CometBFT endpoint until both are responsive.
 # Then, as a second post-upgrade check, it polls the height reporting endpoint to check if the chain height is increasing.
 [checks.post-upgrade]

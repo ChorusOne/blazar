@@ -113,9 +113,15 @@ type StateMachine struct {
 }
 
 type PreUpgrade struct {
-	Enabled       []string       `toml:"enabled"`
-	Blocks        int64          `toml:"blocks"`
-	SetHaltHeight *SetHaltHeight `toml:"set-halt-height"`
+	Enabled         []string         `toml:"enabled"`
+	Blocks          int64            `toml:"blocks"`
+	SetHaltHeight   *SetHaltHeight   `toml:"set-halt-height"`
+	PullDockerImage *PullDockerImage `toml:"pull-docker-image"`
+}
+
+type PullDockerImage struct {
+	MaxRetries     int           `toml:"max-retries"`
+	InitialBackoff time.Duration `toml:"initial-backoff"`
 }
 
 type SetHaltHeight struct {
@@ -368,10 +374,15 @@ func (cfg *Config) ValidatePreUpgradeChecks() error {
 		case checksproto.PreCheck_name[int32(checksproto.PreCheck_SET_HALT_HEIGHT)]:
 			// there is no config so nothing to check
 			if cfg.Checks.PreUpgrade.SetHaltHeight.DelayBlocks < 0 {
-				return errors.New("checks.pre-upgrade.set-halt-height cannot be less than 0")
+				return errors.New("checks.pre-upgrade.set-halt-height.delay-blocks cannot be less than 0")
 			}
 		case checksproto.PreCheck_name[int32(checksproto.PreCheck_PULL_DOCKER_IMAGE)]:
-			// there is no config so nothing to check
+			if cfg.Checks.PreUpgrade.PullDockerImage.MaxRetries < 0 {
+				return errors.New("checks.pre-upgrade.pull-docker-image.max-retries cannot be less than 0")
+			}
+			if cfg.Checks.PreUpgrade.PullDockerImage.InitialBackoff < 0 {
+				return errors.New("checks.pre-upgrade.pull-docker-image.initial-backoff cannot be less than 0")
+			}
 		default:
 			return fmt.Errorf("unknown value in checks.pre-upgrade.enabled: %s", check)
 		}

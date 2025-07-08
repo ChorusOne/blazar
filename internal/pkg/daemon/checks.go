@@ -79,7 +79,8 @@ func (d *Daemon) preUpgradeChecks(
 				checksproto.PreCheck_PULL_DOCKER_IMAGE.String(), upgrade.Tag,
 			).Notify(ctx)
 
-			_, newImage, err := checks.PullDockerImage(ctx, d.dcc, serviceName, upgrade.Tag, upgrade.Height)
+			_, newImage, err := checks.PullDockerImage(ctx, d.dcc, serviceName, upgrade.Tag, upgrade.Height,
+				cfg.PullDockerImage.MaxRetries, cfg.PullDockerImage.InitialBackoff)
 			d.reportPreUpgradeRoutine(ctx, upgrade, newImage, err)
 
 			d.SetPreCheckStatus(upgrade.Height, checksproto.PreCheck_PULL_DOCKER_IMAGE, checksproto.CheckStatus_FINISHED)

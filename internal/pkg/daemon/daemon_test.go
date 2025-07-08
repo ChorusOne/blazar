@@ -542,6 +542,10 @@ func generateConfig(t *testing.T, tempDir, serviceName string, grpcPort, cometbf
 				SetHaltHeight: &config.SetHaltHeight{
 					DelayBlocks: 0,
 				},
+				PullDockerImage: &config.PullDockerImage{
+					MaxRetries:     0,
+					InitialBackoff: 0,
+				},
 			},
 			PostUpgrade: config.PostUpgrade{
 				// cannot enable FIRST_BLOCK_VOTED here as the test validator has
