@@ -302,7 +302,7 @@ func (d *Daemon) Run(ctx context.Context, cfg *config.Config) error {
 		ctxWithHeight := notification.WithUpgradeHeight(ctx, upgradeHeight)
 
 		// step 1: perform upgrade
-		err = d.performUpgrade(ctxWithHeight, &cfg.Compose, cfg.ComposeService, upgradeHeight)
+		err = d.performUpgrade(ctxWithHeight, &cfg.Compose, cfg.Checks.PreUpgrade.PullDockerImage, cfg.ComposeService, upgradeHeight)
 		d.updateMetrics()
 
 		if err != nil {
@@ -452,7 +452,8 @@ func (d *Daemon) waitForUpgrade(ctx context.Context, cfg *config.Config) (int64,
 
 func (d *Daemon) performUpgrade(
 	ctx context.Context,
-	compose *config.ComposeCli,
+	composeConfig *config.ComposeCli,
+	pullImageConfig *config.PullDockerImage,
 	serviceName string,
 	upgradeHeight int64,
 ) (err error) {
@@ -485,10 +486,7 @@ func (d *Daemon) performUpgrade(
 
 	// ensure the docker image is present on the host (this should be done in a pre-check phase though). Better safe than sorry
 	var currImage, newImage string
-	// hardcoding these params to keep the function signature the same
-	maxRetries := 3
-	backoffDuration := 2 * time.Second
-	currImage, newImage, err = checks.PullDockerImage(ctx, d.dcc, serviceName, upgrade.Tag, upgrade.Height, maxRetries, backoffDuration)
+	currImage, newImage, err = checks.PullDockerImage(ctx, d.dcc, serviceName, upgrade.Tag, upgrade.Height, pullImageConfig.MaxRetries, pullImageConfig.InitialBackoff)
 	if err != nil {
 		return err
 	}
@@ -497,7 +495,7 @@ func (d *Daemon) performUpgrade(
 	d.MustSetStatusAndStep(upgradeHeight, urproto.UpgradeStatus_EXECUTING, urproto.UpgradeStep_COMPOSE_FILE_UPGRADE)
 
 	// take container down or check if it is down already
-	isRunning, err := d.dcc.IsServiceRunning(ctx, serviceName, compose.DownTimeout)
+	isRunning, err := d.dcc.IsServiceRunning(ctx, serviceName, composeConfig.DownTimeout)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if service is running")
 	}
@@ -508,7 +506,7 @@ func (d *Daemon) performUpgrade(
 	// container.
 	if isRunning {
 		logger.Info("Executing compose down").Notify(ctx)
-		if err = d.dcc.Down(ctx, serviceName, compose.DownTimeout); err != nil {
+		if err = d.dcc.Down(ctx, serviceName, composeConfig.DownTimeout); err != nil {
 			return errors.Wrapf(err, "failed to down compose")
 		}
 	}
@@ -520,7 +518,7 @@ func (d *Daemon) performUpgrade(
 
 	logger.Info("Executing compose up").Notify(ctx)
 
-	if err = d.dcc.Up(ctx, serviceName, compose.UpDeadline); err != nil {
+	if err = d.dcc.Up(ctx, serviceName, composeConfig.UpDeadline); err != nil {
 		return errors.Wrapf(err, "failed to up compose")
 	}
 
