@@ -239,7 +239,7 @@ func startAndTestGovUpgrade(ctx context.Context, t *testing.T, daemon *Daemon, c
 	requirePreCheckStatus(t, daemon.stateMachine, 10)
 
 	// perform the upgrade
-	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.ComposeService, height)
+	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.Checks.PreUpgrade.PullDockerImage, cfg.ComposeService, height)
 	require.NoError(t, err)
 
 	// ensure the upgrade was successful
@@ -365,7 +365,7 @@ func runNonChain(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeP
 
 	requirePreCheckStatus(t, sm, 13)
 
-	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.ComposeService, height)
+	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.Checks.PreUpgrade.PullDockerImage, cfg.ComposeService, height)
 	require.NoError(t, err)
 
 	require.Contains(t, outBuffer.String(), "Executing compose up")
@@ -412,7 +412,7 @@ func runNonChain(t *testing.T, metrics *metrics.Metrics, prvdr provider.UpgradeP
 
 	requirePreCheckStatus(t, sm, 19)
 
-	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.ComposeService, height)
+	err = daemon.performUpgrade(ctx, &cfg.Compose, cfg.Checks.PreUpgrade.PullDockerImage, cfg.ComposeService, height)
 	require.NoError(t, err)
 
 	// lets see if post upgrade checks pass
