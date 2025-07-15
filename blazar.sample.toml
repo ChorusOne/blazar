@@ -85,7 +85,7 @@ delay-blocks = 0
 
 # [OPTIONAL] Omit this section if you don't want this check
 # Pulls the docker image before executing the actual upgrade.
-# Sometimes, pulling fails due to some transient issues, e.g with DNS, or registry timing ou
+# Sometimes, pulling fails due to some transient issues, e.g with DNS, or Docker registry timing out
 [checks.pre-upgrade.pull-docker-image]
 # Specify how many times Blazar should retry to pull the image.
 max-retries = 0
