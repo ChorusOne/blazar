@@ -125,7 +125,24 @@ func NewStreamingHeightWatcher(ctx context.Context, cosmosClient *cosmos.Client,
 					logger.Warn("Chain is stuck, I will NOT re-create ws subscription")
 					continue
 				}
-				logger.Warnf("Chain is moving, latest height seen by subscription: %d, latest height seen on chain: %d. Re-creating ws subscription", lastHeight, height)
+
+				if height > lastHeight {
+					logger.Warnf("ws subscription reporting lower height than CometBFT RPC. Last seen: %d, current: %d. Sending current height",
+						lastHeight, height)
+
+					select {
+					case heights <- NewHeight{
+						Height: height,
+						Error:  nil,
+					}:
+						lastHeight = height
+					case <-cancel:
+						return
+					}
+				}
+
+				logger.Warnf("Re-creating ws subscription after reconciling")
+
 				if err = cosmosClient.GetCometbftClient().Unsubscribe(ctx, name, query); err != nil {
 					logger.Warnf("Failed to unsubscribe from websocket, continuing anyways: %v", err)
 				}
