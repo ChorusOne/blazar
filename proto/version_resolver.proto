@@ -2,6 +2,8 @@ syntax = "proto3";
 
 import "upgrades_registry.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
 
 option go_package = "internal/pkg/proto/version_resolver";
 
@@ -43,7 +45,7 @@ message Version {
    int32 priority = 5;
 
    // created_at timestamp
-   // @gotags: gorm:"not null"
+   // @gotags: gorm:"not null;serializer:timestamppb"
    google.protobuf.Timestamp created_at = 6;
 }
 

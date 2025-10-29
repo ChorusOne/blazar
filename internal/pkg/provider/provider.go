@@ -5,6 +5,8 @@ import (
 
 	urproto "blazar/internal/pkg/proto/upgrades_registry"
 	vrproto "blazar/internal/pkg/proto/version_resolver"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // VersionResolver is an interface for fetching versions from an external source
@@ -40,6 +42,10 @@ func PostProcessUpgrade(upgrade *urproto.Upgrade, source urproto.ProviderType, p
 	if upgrade.Priority == 0 {
 		upgrade.Priority = priority
 	}
+
+	if upgrade.CreatedAt == nil {
+		upgrade.CreatedAt = timestamppb.Now()
+	}
 }
 
 func PostProcessVersions(versions []*vrproto.Version, source urproto.ProviderType, priority int32) []*vrproto.Version {
@@ -57,5 +63,9 @@ func PostProcessVersion(version *vrproto.Version, source urproto.ProviderType, p
 
 	if version.Priority == 0 {
 		version.Priority = priority
+	}
+
+	if version.CreatedAt == nil {
+		version.CreatedAt = timestamppb.Now()
 	}
 }

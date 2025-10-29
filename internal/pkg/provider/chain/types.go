@@ -2,6 +2,7 @@ package chain
 
 import (
 	"fmt"
+	"time"
 
 	"blazar/internal/pkg/errors"
 	urproto "blazar/internal/pkg/proto/upgrades_registry"
@@ -53,6 +54,7 @@ type chainUpgrade struct {
 	Status     ProposalStatus
 	Network    string
 	ProposalID uint64
+	CreatedAt  time.Time
 }
 
 func (cu chainUpgrade) ToProto() urproto.Upgrade {
@@ -129,7 +131,7 @@ func fromV1beta1(status v1beta1.ProposalStatus) ProposalStatus {
 	}
 }
 
-func trySoftwareUpgradeProposal(typeURL string, value []byte, status ProposalStatus, chain string) (*chainUpgrade, error) {
+func trySoftwareUpgradeProposal(typeURL string, value []byte, status ProposalStatus, chain string, submitTime time.Time) (*chainUpgrade, error) {
 	if typeURL == "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" {
 		// this is deprecated but still widely used on chains
 		upgrade := &upgradetypes.SoftwareUpgradeProposal{}
@@ -137,26 +139,28 @@ func trySoftwareUpgradeProposal(typeURL string, value []byte, status ProposalSta
 			return nil, errors.Wrapf(err, "failed to unmarshal SoftwareUpgradeProposal")
 		}
 		return &chainUpgrade{
-			Height:  upgrade.Plan.Height,
-			Name:    upgrade.Plan.Name,
-			Status:  status,
-			Network: chain,
+			Height:    upgrade.Plan.Height,
+			Name:      upgrade.Plan.Name,
+			Status:    status,
+			Network:   chain,
+			CreatedAt: submitTime,
 		}, nil
 	}
 	return nil, nil
 }
 
-func tryMsgSoftwareUpgrade(typeURL string, value []byte, status ProposalStatus, chain string) (*chainUpgrade, error) {
+func tryMsgSoftwareUpgrade(typeURL string, value []byte, status ProposalStatus, chain string, submitTime time.Time) (*chainUpgrade, error) {
 	if typeURL == "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade" {
 		upgrade := &upgradetypes.MsgSoftwareUpgrade{}
 		if err := upgrade.Unmarshal(value); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal MsgSoftwareUpgrade")
 		}
 		return &chainUpgrade{
-			Height:  upgrade.Plan.Height,
-			Name:    upgrade.Plan.Name,
-			Status:  status,
-			Network: chain,
+			Height:    upgrade.Plan.Height,
+			Name:      upgrade.Plan.Name,
+			Status:    status,
+			Network:   chain,
+			CreatedAt: submitTime,
 		}, nil
 	}
 	return nil, nil

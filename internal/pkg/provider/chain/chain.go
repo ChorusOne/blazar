@@ -3,6 +3,7 @@ package chain
 import (
 	"context"
 	"sort"
+	"time"
 
 	"blazar/internal/pkg/errors"
 	urproto "blazar/internal/pkg/proto/upgrades_registry"
@@ -199,6 +200,7 @@ func (p *Provider) getUpgradeProposalsV1beta1(ctx context.Context) ([]chainUpgra
 				status,
 				proposal.ProposalId,
 				p.chain,
+				proposal.SubmitTime,
 			)
 			if err != nil {
 				return nil, err
@@ -243,6 +245,7 @@ func (p *Provider) getUpgradeProposalsV1(ctx context.Context) ([]chainUpgrade, e
 					status,
 					proposal.GetId(),
 					p.chain,
+					*proposal.SubmitTime,
 				)
 				if err != nil {
 					return nil, err
@@ -257,8 +260,8 @@ func (p *Provider) getUpgradeProposalsV1(ctx context.Context) ([]chainUpgrade, e
 	return upgrades, nil
 }
 
-func parseProposal(typeURL string, content []byte, status ProposalStatus, proposalID uint64, chain string) (*chainUpgrade, error) {
-	upgrade, err := trySoftwareUpgradeProposal(typeURL, content, status, chain)
+func parseProposal(typeURL string, content []byte, status ProposalStatus, proposalID uint64, chain string, submitTime time.Time) (*chainUpgrade, error) {
+	upgrade, err := trySoftwareUpgradeProposal(typeURL, content, status, chain, submitTime)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to process proposal id %d", proposalID)
 	}
@@ -267,7 +270,7 @@ func parseProposal(typeURL string, content []byte, status ProposalStatus, propos
 		return upgrade, nil
 	}
 
-	upgrade, err = tryMsgSoftwareUpgrade(typeURL, content, status, chain)
+	upgrade, err = tryMsgSoftwareUpgrade(typeURL, content, status, chain, submitTime)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to process proposal id %d", proposalID)
 	}
