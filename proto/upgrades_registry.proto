@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "internal/pkg/proto/upgrades_registry";
 
@@ -146,12 +147,13 @@ message Upgrade {
     // @gotags: gorm:"not null"
     ProviderType source = 9;
 
-    // created_at timestamp
-    // @gotags: gorm:"not null"
-    google.protobuf.Timestamp created_at = 11;
-
     // propoal id associated with the upgrade
     optional int64 proposal_id = 10;
+
+    // created_at timestamp
+    // @gotags: gorm:"not null;serializer:timestamppb"
+    google.protobuf.Timestamp created_at = 11;
+
 }
 
 // This is the structure of <chain-home>/blazar/upgrades.json
