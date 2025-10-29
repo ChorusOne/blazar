@@ -41,6 +41,10 @@ message Version {
    // the version priority
    // @gotags: gorm:"primaryKey;not null"
    int32 priority = 5;
+
+   // created_at timestamp
+   // @gotags: gorm:"not null"
+   google.protobuf.Timestamp created_at = 6;
 }
 
 message RegisterVersionRequest {

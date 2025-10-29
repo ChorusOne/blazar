@@ -1,0 +1,2 @@
+alter table upgrades add created_at timestamptz not null default now();
+alter table versions add created_at timestamptz not null default now();

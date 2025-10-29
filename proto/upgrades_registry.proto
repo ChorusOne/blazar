@@ -146,6 +146,10 @@ message Upgrade {
     // @gotags: gorm:"not null"
     ProviderType source = 9;
 
+    // created_at timestamp
+    // @gotags: gorm:"not null"
+    google.protobuf.Timestamp created_at = 11;
+
     // propoal id associated with the upgrade
     optional int64 proposal_id = 10;
 }
