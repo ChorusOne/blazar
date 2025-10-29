@@ -33,7 +33,7 @@ func (TimestampSerializer) Scan(ctx context.Context, field *schema.Field, dst re
 		t = v
 	case string:
 		var err error
-		t, err = time.Parse(time.RFC3339, v)
+		t, err = time.Parse("2006-01-02 15:04:05.999999-07:00", v)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (TimestampSerializer) Scan(ctx context.Context, field *schema.Field, dst re
 	return nil
 }
 
-func (TimestampSerializer) Value(ctx context.Context, field *schema.Field, dst reflect.Value, fieldValue interface{}) (interface{}, error) {
+func (TimestampSerializer) Value(_ context.Context, field *schema.Field, dst reflect.Value, fieldValue interface{}) (interface{}, error) {
 	ts, ok := fieldValue.(*timestamppb.Timestamp)
 	if !ok || ts == nil {
 		return nil, nil
@@ -207,6 +207,7 @@ func (dp Provider) CancelUpgrade(ctx context.Context, height int64, network stri
 			Step:       urproto.UpgradeStep_NONE,
 			Source:     urproto.ProviderType_DATABASE,
 			ProposalId: nil,
+			CreatedAt:  timestamppb.Now(),
 		})
 
 		if result.Error != nil {
