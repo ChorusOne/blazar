@@ -47,7 +47,7 @@ func (TimestampSerializer) Scan(ctx context.Context, field *schema.Field, dst re
 	return nil
 }
 
-func (TimestampSerializer) Value(_ context.Context, _ *schema.Field, dst reflect.Value, fieldValue any) (any, error) {
+func (TimestampSerializer) Value(_ context.Context, _ *schema.Field, _ reflect.Value, fieldValue any) (any, error) {
 	ts, ok := fieldValue.(*timestamppb.Timestamp)
 	if !ok || ts == nil {
 		return nil, nil

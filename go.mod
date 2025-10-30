@@ -9,6 +9,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.47.13
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/docker/docker-credential-helpers v0.8.1
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/jedib0t/go-pretty/v6 v6.5.8
 	github.com/otiai10/copy v1.12.0
@@ -75,7 +76,6 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/getsentry/sentry-go v0.23.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
