@@ -21,7 +21,7 @@ import (
 
 type TimestampSerializer struct{}
 
-func (TimestampSerializer) Scan(ctx context.Context, field *schema.Field, dst reflect.Value, dbValue interface{}) error {
+func (TimestampSerializer) Scan(ctx context.Context, field *schema.Field, dst reflect.Value, dbValue any) error {
 	if dbValue == nil {
 		field.ReflectValueOf(ctx, dst).SetZero()
 		return nil
@@ -47,7 +47,7 @@ func (TimestampSerializer) Scan(ctx context.Context, field *schema.Field, dst re
 	return nil
 }
 
-func (TimestampSerializer) Value(_ context.Context, field *schema.Field, dst reflect.Value, fieldValue interface{}) (interface{}, error) {
+func (TimestampSerializer) Value(_ context.Context, _ *schema.Field, dst reflect.Value, fieldValue any) (any, error) {
 	ts, ok := fieldValue.(*timestamppb.Timestamp)
 	if !ok || ts == nil {
 		return nil, nil
