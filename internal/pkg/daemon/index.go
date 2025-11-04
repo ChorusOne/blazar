@@ -21,10 +21,20 @@ import (
 
 func RegisterIndexHandler(mux *runtime.ServeMux, d *Daemon, upInterval time.Duration) error {
 	return mux.HandlePath("GET", "/", func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-		t, err := template.ParseFS(static.Templates, "templates/index/index-blazar.html")
+		funcs := template.FuncMap{
+			"formatTime": func(ts uint64) string {
+				if ts == 0 {
+					return "-"
+				}
+				return time.Unix(int64(ts), 0).Format("2006-01-02 15:04:05 MST")
+			},
+		}
+
+		t, err := template.New("index-blazar.html").
+			Funcs(funcs).
+			ParseFS(static.Templates, "templates/index/index-blazar.html")
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(err.Error()))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
