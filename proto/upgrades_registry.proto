@@ -151,8 +151,13 @@ message Upgrade {
     optional int64 proposal_id = 10;
 
     // created_at timestamp
+<<<<<<< HEAD
     // @gotags: gorm:"not null;serializer:timestamppb"
     google.protobuf.Timestamp created_at = 11;
+=======
+    // @gotags: gorm:"not null,serializer:timestamppb"
+    uint64 created_at = 11;
+>>>>>>> 22d07ba (use uint64 timestamps in protobuf)
 
 }
 

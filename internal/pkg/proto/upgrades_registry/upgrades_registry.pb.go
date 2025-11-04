@@ -10,7 +10,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -310,7 +310,7 @@ type Upgrade struct {
 	ProposalId *int64 `protobuf:"varint,10,opt,name=proposal_id,json=proposalId,proto3,oneof" json:"proposal_id,omitempty"`
 	// created_at timestamp
 
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty" gorm:"not null;serializer:timestamppb"`
+	CreatedAt     uint64 `protobuf:"varint,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty" gorm:"not null,serializer:timestamppb"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -415,11 +415,11 @@ func (x *Upgrade) GetProposalId() int64 {
 	return 0
 }
 
-func (x *Upgrade) GetCreatedAt() *timestamppb.Timestamp {
+func (x *Upgrade) GetCreatedAt() uint64 {
 	if x != nil {
 		return x.CreatedAt
 	}
-	return nil
+	return 0
 }
 
 // This is the structure of <chain-home>/blazar/upgrades.json
@@ -868,7 +868,7 @@ var File_upgrades_registry_proto protoreflect.FileDescriptor
 
 const file_upgrades_registry_proto_rawDesc = "" +
 	"\n" +
-	"\x17upgrades_registry.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x81\x03\n" +
+	"\x17upgrades_registry.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe5\x02\n" +
 	"\aUpgrade\x12\x16\n" +
 	"\x06height\x18\x01 \x01(\x03R\x06height\x12\x10\n" +
 	"\x03tag\x18\x02 \x01(\tR\x03tag\x12\x18\n" +
@@ -881,9 +881,9 @@ const file_upgrades_registry_proto_rawDesc = "" +
 	"\x06source\x18\t \x01(\x0e2\r.ProviderTypeR\x06source\x12$\n" +
 	"\vproposal_id\x18\n" +
 	" \x01(\x03H\x00R\n" +
-	"proposalId\x88\x01\x01\x129\n" +
+	"proposalId\x88\x01\x01\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\x0e\n" +
+	"created_at\x18\v \x01(\x04R\tcreatedAtB\x0e\n" +
 	"\f_proposal_id\"0\n" +
 	"\bUpgrades\x12$\n" +
 	"\bupgrades\x18\x01 \x03(\v2\b.UpgradeR\bupgrades\"U\n" +
@@ -975,34 +975,32 @@ var file_upgrades_registry_proto_goTypes = []any{
 	(*CancelUpgradeResponse)(nil), // 11: CancelUpgradeResponse
 	(*ForceSyncRequest)(nil),      // 12: ForceSyncRequest
 	(*ForceSyncResponse)(nil),     // 13: ForceSyncResponse
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
 }
 var file_upgrades_registry_proto_depIdxs = []int32{
 	2,  // 0: Upgrade.type:type_name -> UpgradeType
 	1,  // 1: Upgrade.status:type_name -> UpgradeStatus
 	0,  // 2: Upgrade.step:type_name -> UpgradeStep
 	3,  // 3: Upgrade.source:type_name -> ProviderType
-	14, // 4: Upgrade.created_at:type_name -> google.protobuf.Timestamp
-	4,  // 5: Upgrades.upgrades:type_name -> Upgrade
-	4,  // 6: AddUpgradeRequest.upgrade:type_name -> Upgrade
-	2,  // 7: ListUpgradesRequest.type:type_name -> UpgradeType
-	3,  // 8: ListUpgradesRequest.source:type_name -> ProviderType
-	1,  // 9: ListUpgradesRequest.status:type_name -> UpgradeStatus
-	4,  // 10: ListUpgradesResponse.upgrades:type_name -> Upgrade
-	3,  // 11: CancelUpgradeRequest.source:type_name -> ProviderType
-	6,  // 12: UpgradeRegistry.AddUpgrade:input_type -> AddUpgradeRequest
-	8,  // 13: UpgradeRegistry.ListUpgrades:input_type -> ListUpgradesRequest
-	10, // 14: UpgradeRegistry.CancelUpgrade:input_type -> CancelUpgradeRequest
-	12, // 15: UpgradeRegistry.ForceSync:input_type -> ForceSyncRequest
-	7,  // 16: UpgradeRegistry.AddUpgrade:output_type -> AddUpgradeResponse
-	9,  // 17: UpgradeRegistry.ListUpgrades:output_type -> ListUpgradesResponse
-	11, // 18: UpgradeRegistry.CancelUpgrade:output_type -> CancelUpgradeResponse
-	13, // 19: UpgradeRegistry.ForceSync:output_type -> ForceSyncResponse
-	16, // [16:20] is the sub-list for method output_type
-	12, // [12:16] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	4,  // 4: Upgrades.upgrades:type_name -> Upgrade
+	4,  // 5: AddUpgradeRequest.upgrade:type_name -> Upgrade
+	2,  // 6: ListUpgradesRequest.type:type_name -> UpgradeType
+	3,  // 7: ListUpgradesRequest.source:type_name -> ProviderType
+	1,  // 8: ListUpgradesRequest.status:type_name -> UpgradeStatus
+	4,  // 9: ListUpgradesResponse.upgrades:type_name -> Upgrade
+	3,  // 10: CancelUpgradeRequest.source:type_name -> ProviderType
+	6,  // 11: UpgradeRegistry.AddUpgrade:input_type -> AddUpgradeRequest
+	8,  // 12: UpgradeRegistry.ListUpgrades:input_type -> ListUpgradesRequest
+	10, // 13: UpgradeRegistry.CancelUpgrade:input_type -> CancelUpgradeRequest
+	12, // 14: UpgradeRegistry.ForceSync:input_type -> ForceSyncRequest
+	7,  // 15: UpgradeRegistry.AddUpgrade:output_type -> AddUpgradeResponse
+	9,  // 16: UpgradeRegistry.ListUpgrades:output_type -> ListUpgradesResponse
+	11, // 17: UpgradeRegistry.CancelUpgrade:output_type -> CancelUpgradeResponse
+	13, // 18: UpgradeRegistry.ForceSync:output_type -> ForceSyncResponse
+	15, // [15:19] is the sub-list for method output_type
+	11, // [11:15] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_upgrades_registry_proto_init() }
