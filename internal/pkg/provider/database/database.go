@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"blazar/internal/pkg/config"
@@ -12,53 +11,10 @@ import (
 	vrproto "blazar/internal/pkg/proto/version_resolver"
 	"blazar/internal/pkg/provider"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"gorm.io/gorm/schema"
 )
-
-type TimestampSerializer struct{}
-
-func (TimestampSerializer) Scan(ctx context.Context, field *schema.Field, dst reflect.Value, dbValue any) error {
-	if dbValue == nil {
-		field.ReflectValueOf(ctx, dst).SetZero()
-		return nil
-	}
-
-	var t time.Time
-	switch v := dbValue.(type) {
-	case time.Time:
-		t = v
-	case string:
-		var err error
-		t, err = time.Parse("2006-01-02 15:04:05.999999-07:00", v)
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unsupported type: %T", dbValue)
-	}
-
-	ts := timestamppb.New(t)
-	fieldValue := field.ReflectValueOf(ctx, dst)
-	fieldValue.Set(reflect.ValueOf(ts))
-	return nil
-}
-
-func (TimestampSerializer) Value(_ context.Context, _ *schema.Field, _ reflect.Value, fieldValue any) (any, error) {
-	ts, ok := fieldValue.(*timestamppb.Timestamp)
-	if !ok || ts == nil {
-		return nil, nil
-	}
-
-	return ts.AsTime(), nil
-}
-
-func init() {
-	schema.RegisterSerializer("timestamppb", TimestampSerializer{})
-}
 
 type Provider struct {
 	db       *gorm.DB
@@ -207,7 +163,7 @@ func (dp Provider) CancelUpgrade(ctx context.Context, height int64, network stri
 			Step:       urproto.UpgradeStep_NONE,
 			Source:     urproto.ProviderType_DATABASE,
 			ProposalId: nil,
-			CreatedAt:  timestamppb.Now(),
+			CreatedAt:  uint64(time.Now().Unix()),
 		})
 
 		if result.Error != nil {

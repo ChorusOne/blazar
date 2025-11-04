@@ -95,6 +95,7 @@ func GetUpgradeListCmd() *cobra.Command {
 				"Source",
 				"ProposalID",
 				"Blocks_to_upgrade",
+				"Created_at",
 			})
 
 			for _, upgrade := range listUpgradesResponse.Upgrades {
@@ -115,6 +116,7 @@ func GetUpgradeListCmd() *cobra.Command {
 					upgrade.Source,
 					upgrade.GetProposalId(),
 					blocksToUpgrade,
+					upgrade.CreatedAt,
 				})
 			}
 

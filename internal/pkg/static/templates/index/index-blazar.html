@@ -397,6 +397,7 @@
                 <th scope="col">Priority</th>
                 <th scope="col">Source</th>
                 <th scope="col">ProposalID</th>
+                <th scope="col">Creation date</th>
                 <th scope="col">ETA (Blocks)</th>
                 <th scope="col">ETA</th>
               </tr>
@@ -427,6 +428,7 @@
                 <th scope="col">{{ $element.Priority }}</th>
                 <th scope="col">{{ $element.Source }}</th>
                 <th scope="col">{{ $element.ProposalId }}</th>
+                <th scope="col">{{ formatTime $element.CreatedAt }}</th>
                 <th scope="col">
                     {{ if gt .Height $.CurrentBlockHeight }}
                     {{ index $.BlocksToUpgrade .Height }}

@@ -54,7 +54,7 @@ type chainUpgrade struct {
 	Status     ProposalStatus
 	Network    string
 	ProposalID uint64
-	CreatedAt  time.Time
+	CreatedAt  uint64
 }
 
 func (cu chainUpgrade) ToProto() urproto.Upgrade {
@@ -90,6 +90,7 @@ func (cu chainUpgrade) ToProto() urproto.Upgrade {
 		Status:     upgradeStatus,
 		Source:     source,
 		ProposalId: &proposalID,
+		CreatedAt:  cu.CreatedAt,
 	}
 }
 
@@ -143,7 +144,7 @@ func trySoftwareUpgradeProposal(typeURL string, value []byte, status ProposalSta
 			Name:      upgrade.Plan.Name,
 			Status:    status,
 			Network:   chain,
-			CreatedAt: submitTime,
+			CreatedAt: uint64(submitTime.Unix()),
 		}, nil
 	}
 	return nil, nil
@@ -160,7 +161,7 @@ func tryMsgSoftwareUpgrade(typeURL string, value []byte, status ProposalStatus, 
 			Name:      upgrade.Plan.Name,
 			Status:    status,
 			Network:   chain,
-			CreatedAt: submitTime,
+			CreatedAt: uint64(submitTime.Unix()),
 		}, nil
 	}
 	return nil, nil
