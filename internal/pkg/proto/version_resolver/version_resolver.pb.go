@@ -10,7 +10,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 	upgrades_registry "blazar/internal/pkg/proto/upgrades_registry"
 	reflect "reflect"
 	sync "sync"
@@ -42,7 +42,7 @@ type Version struct {
 	Priority int32 `protobuf:"varint,5,opt,name=priority,proto3" json:"priority,omitempty" gorm:"primaryKey;not null"`
 	// created_at timestamp
 
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty" gorm:"not null;serializer:timestamppb"`
+	CreatedAt     uint64 `protobuf:"varint,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty" gorm:"not null"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -112,11 +112,11 @@ func (x *Version) GetPriority() int32 {
 	return 0
 }
 
-func (x *Version) GetCreatedAt() *timestamppb.Timestamp {
+func (x *Version) GetCreatedAt() uint64 {
 	if x != nil {
 		return x.CreatedAt
 	}
-	return nil
+	return 0
 }
 
 type RegisterVersionRequest struct {
@@ -411,15 +411,15 @@ var File_version_resolver_proto protoreflect.FileDescriptor
 
 const file_version_resolver_proto_rawDesc = "" +
 	"\n" +
-	"\x16version_resolver.proto\x1a\x17upgrades_registry.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcb\x01\n" +
+	"\x16version_resolver.proto\x1a\x17upgrades_registry.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xaf\x01\n" +
 	"\aVersion\x12\x16\n" +
 	"\x06height\x18\x01 \x01(\x03R\x06height\x12\x18\n" +
 	"\anetwork\x18\x02 \x01(\tR\anetwork\x12\x10\n" +
 	"\x03tag\x18\x03 \x01(\tR\x03tag\x12%\n" +
 	"\x06source\x18\x04 \x01(\x0e2\r.ProviderTypeR\x06source\x12\x1a\n" +
-	"\bpriority\x18\x05 \x01(\x05R\bpriority\x129\n" +
+	"\bpriority\x18\x05 \x01(\x05R\bpriority\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"Z\n" +
+	"created_at\x18\v \x01(\x04R\tcreatedAt\"Z\n" +
 	"\x16RegisterVersionRequest\x12\"\n" +
 	"\aversion\x18\x01 \x01(\v2\b.VersionR\aversion\x12\x1c\n" +
 	"\toverwrite\x18\x02 \x01(\bR\toverwrite\"\x19\n" +
@@ -468,26 +468,24 @@ var file_version_resolver_proto_goTypes = []any{
 	(*ListVersionsRequest)(nil),         // 5: ListVersionsRequest
 	(*ListVersionsResponse)(nil),        // 6: ListVersionsResponse
 	(upgrades_registry.ProviderType)(0), // 7: ProviderType
-	(*timestamppb.Timestamp)(nil),       // 8: google.protobuf.Timestamp
 }
 var file_version_resolver_proto_depIdxs = []int32{
 	7, // 0: Version.source:type_name -> ProviderType
-	8, // 1: Version.created_at:type_name -> google.protobuf.Timestamp
-	0, // 2: RegisterVersionRequest.version:type_name -> Version
-	0, // 3: GetVersionResponse.version:type_name -> Version
-	7, // 4: ListVersionsRequest.source:type_name -> ProviderType
-	0, // 5: ListVersionsResponse.versions:type_name -> Version
-	1, // 6: VersionResolver.AddVersion:input_type -> RegisterVersionRequest
-	3, // 7: VersionResolver.GetVersion:input_type -> GetVersionRequest
-	5, // 8: VersionResolver.ListVersions:input_type -> ListVersionsRequest
-	2, // 9: VersionResolver.AddVersion:output_type -> RegisterVersionResponse
-	4, // 10: VersionResolver.GetVersion:output_type -> GetVersionResponse
-	6, // 11: VersionResolver.ListVersions:output_type -> ListVersionsResponse
-	9, // [9:12] is the sub-list for method output_type
-	6, // [6:9] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	0, // 1: RegisterVersionRequest.version:type_name -> Version
+	0, // 2: GetVersionResponse.version:type_name -> Version
+	7, // 3: ListVersionsRequest.source:type_name -> ProviderType
+	0, // 4: ListVersionsResponse.versions:type_name -> Version
+	1, // 5: VersionResolver.AddVersion:input_type -> RegisterVersionRequest
+	3, // 6: VersionResolver.GetVersion:input_type -> GetVersionRequest
+	5, // 7: VersionResolver.ListVersions:input_type -> ListVersionsRequest
+	2, // 8: VersionResolver.AddVersion:output_type -> RegisterVersionResponse
+	4, // 9: VersionResolver.GetVersion:output_type -> GetVersionResponse
+	6, // 10: VersionResolver.ListVersions:output_type -> ListVersionsResponse
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_version_resolver_proto_init() }
