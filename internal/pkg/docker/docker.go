@@ -11,7 +11,8 @@ import (
 	"blazar/internal/pkg/errors"
 	"blazar/internal/pkg/log"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
 
@@ -45,7 +46,7 @@ func NewClient(ctx context.Context, ch CredentialHelper) (*Client, error) {
 }
 
 func (dc *Client) IsImagePresent(ctx context.Context, name string) (bool, error) {
-	images, err := dc.client.ImageList(ctx, types.ImageListOptions{})
+	images, err := dc.client.ImageList(ctx, image.ListOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -62,7 +63,7 @@ func (dc *Client) IsImagePresent(ctx context.Context, name string) (bool, error)
 }
 
 func (dc *Client) PullImage(ctx context.Context, name string, platform string) error {
-	imagePullOptions := types.ImagePullOptions{
+	imagePullOptions := image.PullOptions{
 		Platform: platform,
 	}
 
@@ -132,7 +133,7 @@ func (dc *Client) IsContainerRunning(ctx context.Context, containerID string) (b
 		return false, errors.New("containerId is empty")
 	}
 
-	containers, err := dc.client.ContainerList(ctx, types.ContainerListOptions{})
+	containers, err := dc.client.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -146,8 +147,8 @@ func (dc *Client) IsContainerRunning(ctx context.Context, containerID string) (b
 	return false, nil
 }
 
-func (dc *Client) ContainerList(ctx context.Context, all bool) ([]types.Container, error) {
-	return dc.client.ContainerList(ctx, types.ContainerListOptions{All: all})
+func (dc *Client) ContainerList(ctx context.Context, all bool) ([]container.Summary, error) {
+	return dc.client.ContainerList(ctx, container.ListOptions{All: all})
 }
 
 func ParseImageName(imageName string) (string, string, error) {
