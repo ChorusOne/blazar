@@ -209,22 +209,35 @@
         --pico-font-size: 90%;
       }
 
-      .badge {
-          display: inline-flex;
-          align-items: center;
-          background-color: #525252;
-          border-radius: 3px;
-          color: white;
-          padding: 5px 10px;
-          margin-bottom: 1px;
-          font-size: var(--pico-font-size);
+      .stats-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1.5rem;
       }
 
-      .badge .count {
-          background-color: #409614;
-          padding: 2px 6px;
-          border-radius: 3px;
-          margin-left: 5px;
+      .stat-card {
+        background: var(--pico-card-background-color);
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: 8px;
+        padding: 1rem;
+      }
+
+      .stat-label {
+        font-size: 0.875rem;
+        color: var(--pico-color);
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--pico-color);
+      }
+
+      .stat-card-button {
+        border-radius: 8px;
+        background: var(--pico-card-background-color);
       }
     </style>
   </head>
@@ -242,16 +255,29 @@
           <p>Automatic node upgrades for Cosmos SDK networks</p>
         </hgroup>
         <section id="">
-          <p>
-              <div class="badge"><span>Network</span><span class="count">{{ .DefaultNetwork }}</span></div>
-              <div class="badge"><span>Current Height</span><span class="count">{{ .CurrentBlockHeight }}</span></div>
-              <div class="badge"><span>Last Update</span><span class="count">{{ .LastUpdateTime }} ({{ .LastUpdateDiff }} ago)</span></div>
-              <div class="badge"><span>Avg Block Speed</span><span class="count">{{ .BlockSpeed }}s</span></div>
-              <div class="badge"><span>Time to next sync</span><span class="count">{{ .SecondsToNextUpdate }}s</span></div>
-              <div class="badge" style="background-color: var(--pico-primary-background)">
-                  <a href="#" id="force_sync" style="color: white; padding: 2px 6px" data-tooltip="Send a request to force sync the state">Force Sync</a>
-              </div>
-          </p>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Network</div>
+              <div class="stat-value">{{ .DefaultNetwork }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Current Height</div>
+              <div class="stat-value">{{ .CurrentBlockHeight }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Last Update</div>
+              <div class="stat-value">{{ .LastUpdateDiff }} ago</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Block Time</div>
+              <div class="stat-value">{{ .BlockSpeed }}s</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Next Sync</div>
+              <div class="stat-value">{{ .SecondsToNextUpdate }}s</div>
+            </div>
+            <button class="stat-card-button outline" id="force_sync" data-tooltip="Send a request to force sync the state">Sync now</button>
+          </div>
           <hr />
           {{ if .Warning }}
           <p><mark>{{ .Warning }}</mark></p>
