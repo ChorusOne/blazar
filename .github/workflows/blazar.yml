@@ -30,6 +30,8 @@ jobs:
           go-version: '1.22.8'
 
       - name: Build and test
+        env:
+          DOCKER_API_VERSION: "1.41"
         run: |
           make test
 
