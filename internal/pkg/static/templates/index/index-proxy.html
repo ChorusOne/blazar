@@ -15,22 +15,35 @@
         --pico-font-size: 90%;
       }
 
-      .badge {
-          display: inline-flex;
-          align-items: center;
-          background-color: #525252;
-          border-radius: 3px;
-          color: white;
-          padding: 5px 10px;
-          margin-bottom: 1px;
-          font-size: var(--pico-font-size);
+      .stats-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1.5rem;
       }
 
-      .badge .count {
-          background-color: #409614;
-          padding: 2px 6px;
-          border-radius: 3px;
-          margin-left: 5px;
+      .stat-card {
+        background: var(--pico-card-background-color);
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: 8px;
+        padding: 1rem;
+      }
+
+      .stat-label {
+        font-size: 0.875rem;
+        color: var(--pico-color);
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--pico-color);
+      }
+
+      .stat-card-button {
+        border-radius: 8px;
+        background: var(--pico-card-background-color);
       }
     </style>
   </head>
@@ -47,16 +60,40 @@
           <p>Aggregate information about Blazar instances</p>
         </hgroup>
         <section id="">
-          <p>
-              <div class="badge"><span>Networks</span><span class="count">{{ .NoNetworks }}</span></div>
-              <div class="badge"><span>Instances</span><span class="count">{{ .NoInstances }}</span></div>
-              <div class="badge"><span>Errors</span><span class="count">{{ .NoErrors }}</span></div>
-              <div class="badge"><span>Active</span><span class="count">{{ .NoActive }}</span></div>
-              <div class="badge"><span>Executing</span><span class="count">{{ .NoExecuting }}</span></div>
-              <div class="badge"><span>Expired</span><span class="count">{{ .NoExpired }}</span></div>
-              <div class="badge"><span>Completed</span><span class="count">{{ .NoCompleted }}</span></div>
-              <div class="badge"><span>Fetch Time</span><span class="count">{{ .FetchTime }}</span></div>
-          </p>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Networks</div>
+              <div class="stat-value">{{ .NoNetworks }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Instances</div>
+              <div class="stat-value">{{ .NoInstances }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Errors</div>
+              <div class="stat-value">{{ .NoErrors }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Active</div>
+              <div class="stat-value">{{ .NoActive }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Executing</div>
+              <div class="stat-value">{{ .NoExecuting }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Expired</div>
+              <div class="stat-value">{{ .NoExpired }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Completed</div>
+              <div class="stat-value">{{ .NoCompleted }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Fetch Time</div>
+              <div class="stat-value">{{ .FetchTime }}</div>
+            </div>
+          </div>
           <hr />
           {{ if .Warning }}
           <p><mark>{{ .Warning }}</mark></p>
