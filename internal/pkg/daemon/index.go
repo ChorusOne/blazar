@@ -104,7 +104,7 @@ func RegisterIndexHandler(mux *runtime.ServeMux, d *Daemon, upInterval time.Dura
 			SecondsToNextUpdate int64
 			LastBlockHeight     int64
 			CurrentBlockHeight  int64
-			BlockSpeed          float64
+			AvgBlockTime        string
 			Upgrades            []*urproto.Upgrade
 			BlocksToUpgrade     map[int64]string
 			BlocksToETA         map[int64]string
@@ -121,7 +121,7 @@ func RegisterIndexHandler(mux *runtime.ServeMux, d *Daemon, upInterval time.Dura
 			SecondsToNextUpdate: int64(time.Until(syncInfo.LastUpdateTime.Add(upInterval)).Seconds()),
 			LastBlockHeight:     syncInfo.LastBlockHeight,
 			CurrentBlockHeight:  latestHeight,
-			BlockSpeed:          blockSpeed.Seconds(),
+			AvgBlockTime:        fmt.Sprintf("%.3fs", blockSpeed.Seconds()),
 			Upgrades:            upgrades,
 			BlocksToUpgrade:     blocksToUpgradeMap,
 			BlocksToETA:         blocksToETAMap,
