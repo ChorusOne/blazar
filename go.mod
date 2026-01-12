@@ -11,7 +11,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.47.13
 	github.com/docker/docker v28.5.1+incompatible
 	github.com/docker/docker-credential-helpers v0.8.1
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/jedib0t/go-pretty/v6 v6.5.8
 	github.com/otiai10/copy v1.12.0
