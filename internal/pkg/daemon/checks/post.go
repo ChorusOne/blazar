@@ -230,12 +230,16 @@ func NextBlockSignedPostCheck(ctx context.Context, cosmosClient *cosmos.Client, 
 	notifTicker := time.NewTicker(postUpgradeChecks.NotifInterval)
 	timeout := time.NewTimer(postUpgradeChecks.Timeout)
 
-	status, err := cosmosClient.GetCometbftClient().Status(ctx)
+	status, err := cosmosClient.GetStatus(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "Could not get node status")
 	}
 
-	nodeAddress := status.ValidatorInfo.Address
+	nodeAddressBytes, err := hex.DecodeString(status.ValidatorInfo.Address)
+	if err != nil {
+		return errors.Wrapf(err, "Could not parse node address %q", status.ValidatorInfo.Address)
+	}
+	nodeAddress := bytes.HexBytes(nodeAddressBytes)
 	logger.Infof("Post upgrade check 2: Waiting to sign the first block after upgrade=%d, address=%s", upgradeHeight, nodeAddress.String()).Notify(ctx)
 	if status.ValidatorInfo.VotingPower == 0 {
 		logger.Info("Post upgrade check 2: skipping signature check, as VP is 0").Notify(ctx)
