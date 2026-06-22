@@ -529,17 +529,17 @@ func (d *Daemon) performUpgrade(
 }
 
 func (d *Daemon) updateHeightAndBlockSpeed(newHeight int64) {
-	// calculate block speed based on the last few observed blocks
+	if d.currHeight == newHeight {
+		return
+	}
+
 	lastBlockHeight := d.currHeight
 	lastHeightTime := d.currHeightTime
 	d.currHeight = newHeight
 	d.currHeightTime = time.Now()
 
-	// this may happen when polling
-	if d.currHeight != lastBlockHeight {
-		n := newHeight % int64(cap(d.observedBlockSpeeds))
-		d.observedBlockSpeeds[n] = time.Millisecond * time.Duration(d.currHeightTime.Sub(lastHeightTime).Milliseconds()/(d.currHeight-lastBlockHeight))
-	}
+	n := newHeight % int64(cap(d.observedBlockSpeeds))
+	d.observedBlockSpeeds[n] = time.Millisecond * time.Duration(d.currHeightTime.Sub(lastHeightTime).Milliseconds()/(d.currHeight-lastBlockHeight))
 
 	sum, cnt := 0.0, 0
 	for _, blockSpeed := range d.observedBlockSpeeds {
