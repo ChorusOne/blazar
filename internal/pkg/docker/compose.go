@@ -16,8 +16,8 @@ import (
 	"blazar/internal/pkg/errors"
 	"blazar/internal/pkg/log"
 
-	compose "github.com/compose-spec/compose-go/cli"
-	composeTypes "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/cli"
+	composeTypes "github.com/compose-spec/compose-go/v2/types"
 )
 
 var (
@@ -398,7 +398,7 @@ func LoadComposeFile(composeFile string) (*composeTypes.Project, error) {
 		return nil, err
 	}
 
-	project, err := compose.ProjectFromOptions(opts)
+	project, err := opts.LoadProject(context.Background())
 	if err != nil {
 		return nil, err
 	}
