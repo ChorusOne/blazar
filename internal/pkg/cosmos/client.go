@@ -117,6 +117,18 @@ func (cc *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
 	return res.Block.Header.Height, nil
 }
 
+func (cc *Client) GetLatestApplicationHeight(ctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, cc.timeout)
+	defer cancel()
+
+	res, err := cc.cometbftClient.ABCIInfo(ctx)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get application info")
+	}
+
+	return res.Response.LastBlockHeight, nil
+}
+
 func (cc *Client) GetProposalsV1(ctx context.Context) (v1.Proposals, error) {
 	var key []byte
 	proposals := make(v1.Proposals, 0, 50)

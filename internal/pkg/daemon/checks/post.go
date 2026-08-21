@@ -119,7 +119,34 @@ func ChainHeightIncreased(ctx context.Context, cosmosClient *cosmos.Client, cfg 
 				continue
 			}
 			if newHeight > upgradeHeight {
-				logger.Infof("Post upgrade check passed, chain height increased, newly observed chain height: %d. All Post upgrade checks passed.", newHeight).Notify(ctx)
+				// Application height is updated after the block is committed and after it is executed/applied.
+				//
+				// We need this height to know whether the node actually managed to apply
+				// the new block, or whether it failed to do so.
+				//
+				// The behavior we saw was: when rolling out a "wrong" version of the software,
+				// the node commits a block at height `N`, but fails to execute it. Blazar
+				// happily reports that the height `N` has been reached, and marks the upgrade
+				// as "successful".
+				//
+				// That works fine for the most upgrades, e.g. when a new version is released
+				// and new upgrade handlers are expected to execute properly.
+				// When the version is wrong, the upgrade handlers are not found,
+				// the execution fails, but Blazar still considers it successful.
+				applicationHeight, err := cosmosClient.GetLatestApplicationHeight(ctx)
+				if err != nil {
+					logger.Err(err).Warn("Application info endpoint returned an error, will retry")
+					continue
+				}
+
+				if applicationHeight < newHeight {
+					logger.Infof("Chain height increased to %d, but the application is only at %d, will retry", newHeight, applicationHeight)
+					continue
+				}
+
+				msg := "Post upgrade check passed, chain height increased and app executed the block, newly observed chain height: %d, application height: %d. All Post upgrade checks passed."
+				logger.Infof(msg, newHeight, applicationHeight).Notify(ctx)
+
 				return nil
 			}
 
