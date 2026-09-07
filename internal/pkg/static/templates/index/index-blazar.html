@@ -239,6 +239,67 @@
         border-radius: 8px;
         background: var(--pico-card-background-color);
       }
+
+      .switch-with-help {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: calc(var(--pico-spacing) * 0.375);
+      }
+
+      .switch-with-help label {
+        margin-bottom: 0;
+      }
+
+      button.help-icon {
+        --pico-background-color: transparent;
+        --pico-border-color: var(--pico-muted-color);
+        --pico-color: var(--pico-muted-color);
+        position: static;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.25rem;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        margin: 0;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      button.help-icon:is(:hover, :focus, :active) {
+        --pico-background-color: transparent;
+        --pico-border-color: var(--pico-primary);
+        --pico-color: var(--pico-primary);
+      }
+
+      [data-tooltip].help-tooltip::before {
+        --pico-tooltip-slide-to: translate(0, -0.25rem);
+        left: 0;
+        width: min(32rem, calc(100vw - 2rem));
+        max-width: calc(100vw - 2rem);
+        overflow: visible;
+        transform: translate(0, -0.25rem);
+        text-overflow: clip;
+        text-align: left;
+        white-space: pre-line;
+      }
+
+      [data-tooltip].help-tooltip::after {
+        --pico-tooltip-caret-slide-to: translate(0, 0);
+        left: auto;
+        transform: translate(0, 0);
+      }
+
+      [data-tooltip].help-tooltip:is(:hover, :focus)::before,
+      [data-tooltip].help-tooltip:is(:hover, :focus)::after {
+        animation: none;
+        opacity: 1;
+      }
     </style>
   </head>
 
@@ -291,6 +352,18 @@
     <!-- ./ Header -->
     <!-- Main -->
     <main class="container">
+      <section id="notes">
+        <h2>Notes</h2>
+        <p>
+          Internally Upgrades and Versions are separate tables.
+          Upgrades table can be populated from different sources, most commonly from on-chain governance proposals.
+          An on-chain upgrade is populated without a "tag", use Versions to make the upgrade pick up a tag by the matching height. 
+          <br /><br />
+          Use "Register new version" or click the "+" on the relevant upgrade line to create a version for the existing upcoming upgrade.
+          <br /><br />
+          Use "Register new upgrade" when an on-chain upgrade does not exist. Set upgrade's Type accordingly.
+        </p>
+      </section>
       <!-- Accordions -->
       <section id="accordions">
         <h2>Actions</h2>
@@ -334,10 +407,17 @@
                 <input type="number" min="1" max="99" id="priority" name="priority" placeholder="Priority" />
               </label>
             </div>
-            <label for="overwrite">
-              <input type="checkbox" id="overwriteUpgrade" name="overwrite" role="switch" />
-              Overwrite
-            </label>
+            <div class="switch-with-help">
+              <label for="overwriteUpgrade">
+                <input type="checkbox" id="overwriteUpgrade" name="overwrite" role="switch" />
+                Overwrite
+              </label>
+              <button type="button"
+                class="help-icon help-tooltip"
+                aria-label="Help: overwrite upgrade"
+                data-tooltip="Replace an existing Upgrade by the matching (height, source, priority).&#10;&#10;Note: Overwriting an upgrade from DATABASE will overwrite it at source. If you need to deploy different image tag to specific nodes, register a new upgrade with source 'LOCAL' and higher priority."
+              >?</button>
+            </div>
             <button type="button" style="width: 100%" id="registerUpgradeBtn" aria-describedby="invalid-helper">Submit</button>
             <small id="registerUpgradeStatus" style="visibility: collapse" ></small>
           </form>
@@ -346,6 +426,7 @@
         <!-- Register version -->
         <details>
           <summary role="button" class="outline">Register New Version</summary>
+          <p><small>Versions are stored in a separate table and matched to Upgrades by height when the Upgrade tag is empty.</small></p>
           <form id="registerVersionForm" action="/v1/versions/add">
             <div class="grid">
               <label for="height">
@@ -369,10 +450,18 @@
                 <input type="number" min="1" max="99" id="priority" name="priority" placeholder="Priority" />
               </label>
             </div>
-            <label for="overwrite">
-              <input type="checkbox" id="overwriteVersion" name="overwrite" role="switch" />
-              Overwrite
-            </label>
+            <div class="switch-with-help">
+              <label for="overwriteVersion">
+                <input type="checkbox" id="overwriteVersion" name="overwrite" role="switch" />
+                Overwrite
+              </label>
+              <button
+                type="button"
+                class="help-icon help-tooltip"
+                aria-label="Help: overwrite version"
+                data-tooltip="Replace an existing Version.Tag of the matching (height, source, priority).&#10;&#10;Use to change the Tag of the existing Version.&#10;&#10;Note: Overwriting a version from DATABASE will overwrite it at source. If you need to deploy different image tag to specific nodes, register a new version with source 'LOCAL' and higher priority instead."
+              >?</button>
+            </div>
             <button type="button" style="width: 100%" id="registerVersionBtn" aria-describedby="invalid-helper">Submit</button>
             <small id="registerVersionStatus" style="visibility: collapse" ></small>
           </form>
@@ -396,10 +485,18 @@
                 </select>
               </label>
             </div>
-            <label for="force">
-              <input type="checkbox" id="force" name="force" role="switch" />
-              <a href="#" data-tooltip="Cancel immediately by updating the state machine directly">Force</a>
-            </label>
+            <div class="switch-with-help">
+              <label for="force">
+                <input type="checkbox" id="force" name="force" role="switch" />
+                Force local upgrade state to be CANCELLED
+              </label>
+              <button
+                type="button"
+                class="help-icon help-tooltip"
+                aria-label="Help: force cancel"
+                data-tooltip="Mark upgrade at height N on this node as CANCELLED. Does not affect DATABASE nor LOCAL sources.&#10;&#10;Use to prevent node from executing any upgrade at height N, regardless of priority.&#10;&#10;Note: Force requires Source to be LOCAL, other sources are rejected."
+              >?</button>
+            </div>
             <button type="button" style="width: 100%" id="cancelUpgradeBtn" aria-describedby="invalid-helper">Submit</button>
             <small id="cancelUpgradeStatus" style="visibility: collapse" ></small>
           </form>
