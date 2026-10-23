@@ -321,11 +321,48 @@ func TestSimultaneousProviders(t *testing.T) {
 					Source:   urproto.ProviderType_LOCAL,
 					Priority: 1,
 				}, false)
-				// TODO: this should ideally error
 				require.NoError(t, err)
-				assert.PanicsWithError(t, "found objects with the same height=100 and priority=1", func() {
-					_, _ = ur.GetAllUpgrades(context.Background(), false)
-				})
+				_, err = ur.GetAllUpgrades(context.Background(), false)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "found objects with the same height=100 and priority=1")
+			},
+		},
+		{
+			name: "test same height priority and tag from different providers",
+			upgrades: []*urproto.Upgrade{
+				{
+					Height:   100,
+					Tag:      "v1.0.0",
+					Network:  "test",
+					Name:     "valid_upcoming_upgrade",
+					Type:     urproto.UpgradeType_NON_GOVERNANCE_COORDINATED,
+					Status:   urproto.UpgradeStatus_UNKNOWN,
+					Source:   urproto.ProviderType_DATABASE,
+					Priority: 1,
+				},
+			},
+			testFn: func(t *testing.T, ur *UpgradeRegistry) {
+				err := ur.AddUpgrade(context.Background(), &urproto.Upgrade{
+					Height:   100,
+					Tag:      "v1.0.0",
+					Network:  "test",
+					Name:     "valid_upcoming_upgrade",
+					Type:     urproto.UpgradeType_NON_GOVERNANCE_COORDINATED,
+					Status:   urproto.UpgradeStatus_UNKNOWN,
+					Source:   urproto.ProviderType_LOCAL,
+					Priority: 1,
+				}, false)
+				require.NoError(t, err)
+				upgrades, err := ur.GetAllUpgrades(context.Background(), false)
+				require.NoError(t, err)
+				require.Contains(t, upgrades, int64(100))
+				assert.Equal(t, "v1.0.0", upgrades[100].Tag)
+				assert.Equal(t, urproto.ProviderType_LOCAL, upgrades[100].Source)
+
+				overridden, err := ur.GetOverriddenUpgrades(context.Background(), false)
+				require.NoError(t, err)
+				require.Len(t, overridden[100], 1)
+				assert.Equal(t, urproto.ProviderType_DATABASE, overridden[100][0].Source)
 			},
 		},
 	}
@@ -345,4 +382,37 @@ func TestSimultaneousProviders(t *testing.T) {
 			tt.testFn(t, ur)
 		})
 	}
+}
+
+func TestResolvePriorities(t *testing.T) {
+	t.Run("higher priority wins", func(t *testing.T) {
+		resolved, overridden, err := resolvePriorities([]*urproto.Upgrade{
+			{Height: 100, Tag: "v1", Priority: 1, Source: urproto.ProviderType_DATABASE},
+			{Height: 100, Tag: "v2", Priority: 2, Source: urproto.ProviderType_LOCAL},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, "v2", resolved[100].Tag)
+		require.Len(t, overridden[100], 1)
+		assert.Equal(t, "v1", overridden[100][0].Tag)
+	})
+
+	t.Run("same height priority and tag does not panic", func(t *testing.T) {
+		resolved, overridden, err := resolvePriorities([]*urproto.Upgrade{
+			{Height: 100, Tag: "v1.0.0", Priority: 1, Source: urproto.ProviderType_DATABASE},
+			{Height: 100, Tag: "v1.0.0", Priority: 1, Source: urproto.ProviderType_LOCAL},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, urproto.ProviderType_LOCAL, resolved[100].Source)
+		require.Len(t, overridden[100], 1)
+		assert.Equal(t, urproto.ProviderType_DATABASE, overridden[100][0].Source)
+	})
+
+	t.Run("same height and priority with different tags returns error", func(t *testing.T) {
+		_, _, err := resolvePriorities([]*urproto.Upgrade{
+			{Height: 100, Tag: "v1.0.0", Priority: 1, Source: urproto.ProviderType_DATABASE},
+			{Height: 100, Tag: "different-tag", Priority: 1, Source: urproto.ProviderType_LOCAL},
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "found objects with the same height=100 and priority=1")
+	})
 }
