@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"blazar/internal/pkg/errors"
+	"blazar/internal/pkg/log"
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -26,7 +27,9 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 const defaultPaginationLimit = query.DefaultLimit
@@ -129,6 +132,11 @@ func (cc *Client) GetLatestApplicationHeight(ctx context.Context) (int64, error)
 	return res.Response.LastBlockHeight, nil
 }
 
+func isUnregisteredProposalTypeError(err error) bool {
+	st, ok := status.FromError(err)
+	return ok && st.Code() == codes.Internal && strings.Contains(st.Message(), "no concrete type registered for type URL")
+}
+
 func (cc *Client) GetProposalsV1(ctx context.Context) (v1.Proposals, error) {
 	var key []byte
 	proposals := make(v1.Proposals, 0, 50)
@@ -137,11 +145,17 @@ func (cc *Client) GetProposalsV1(ctx context.Context) (v1.Proposals, error) {
 		pageCtx, cancel := context.WithTimeout(ctx, cc.timeout)
 		res, err := cc.v1Client.Proposals(pageCtx, &v1.QueryProposalsRequest{
 			Pagination: &query.PageRequest{
-				Key:   key,
-				Limit: cc.paginationLimit,
+				Key:     key,
+				Limit:   cc.paginationLimit,
+				Reverse: true,
 			},
 		}, cc.callOptions...)
 		cancel()
+		if len(proposals) > 0 && isUnregisteredProposalTypeError(err) {
+			oldestID := proposals[len(proposals)-1].Id
+			log.FromContext(ctx).Warnf("The node failed to return proposals older than id %d, ignoring them: %v", oldestID, err)
+			break
+		}
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get proposals")
 		}
