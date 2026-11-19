@@ -377,7 +377,10 @@ func (ur *UpgradeRegistry) UpdateVersions(ctx context.Context, commit bool) (map
 		allVersions = append(allVersions, versions...)
 	}
 
-	resolvedVersions, overriddenVersions := resolvePriorities(allVersions)
+	resolvedVersions, overriddenVersions, err := resolvePriorities(allVersions)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	if commit {
 		ur.lock.Lock()
@@ -429,7 +432,10 @@ func (ur *UpgradeRegistry) UpdateUpgrades(ctx context.Context, currentHeight int
 		allUpgrades = append(allUpgrades, upgrades...)
 	}
 
-	resolvedUpgrades, overriddenUpgrades := resolvePriorities(allUpgrades)
+	resolvedUpgrades, overriddenUpgrades, err := resolvePriorities(allUpgrades)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// lock just in case the versions map is reference to ur.versions
 	ur.lock.RLock()
@@ -565,10 +571,49 @@ func (ur *UpgradeRegistry) Network() string {
 	return ur.network
 }
 
-func resolvePriorities[T interface {
+type prioritized interface {
 	GetPriority() int32
 	GetHeight() int64
-}](objects []T) (map[int64]T, map[int64][]T) {
+	GetTag() string
+	GetSource() urproto.ProviderType
+}
+
+func providerRank(src urproto.ProviderType) int32 {
+	switch src {
+	case urproto.ProviderType_LOCAL:
+		return 2
+	case urproto.ProviderType_DATABASE:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func pickPriorityWinner[T prioritized](objects []T) (T, []T, error) {
+	var zero T
+	if len(objects) == 0 {
+		return zero, nil, fmt.Errorf("no objects to resolve")
+	}
+	if len(objects) == 1 {
+		return objects[0], nil, nil
+	}
+
+	for i := 1; i < len(objects); i++ {
+		if objects[i].GetTag() != objects[0].GetTag() {
+			return zero, nil, fmt.Errorf(
+				"found objects with the same height=%d and priority=%d but different tags (%q vs %q)",
+				objects[i].GetHeight(), objects[i].GetPriority(), objects[0].GetTag(), objects[i].GetTag(),
+			)
+		}
+	}
+
+	sort.SliceStable(objects, func(i, j int) bool {
+		return providerRank(objects[i].GetSource()) > providerRank(objects[j].GetSource())
+	})
+	return objects[0], objects[1:], nil
+}
+
+func resolvePriorities[T prioritized](objects []T) (map[int64]T, map[int64][]T, error) {
 	grouppedByHeight := make(map[int64][]T)
 	for _, object := range objects {
 		grouppedByHeight[object.GetHeight()] = append(grouppedByHeight[object.GetHeight()], object)
@@ -576,21 +621,38 @@ func resolvePriorities[T interface {
 
 	resolvedObjects := make(map[int64]T, 0)
 	overriddenObjects := make(map[int64][]T, 0)
-	for height, objects := range grouppedByHeight {
-		if len(objects) > 1 {
-			sort.Slice(objects, func(i, j int) bool {
-				if objects[i].GetPriority() == objects[j].GetPriority() {
-					panic(fmt.Errorf("found objects with the same height=%d and priority=%d", objects[i].GetHeight(), objects[i].GetPriority()))
-				}
-				return objects[i].GetPriority() > objects[j].GetPriority()
-			})
-			overriddenObjects[height] = objects[1:]
+	for height, heightObjects := range grouppedByHeight {
+		byPriority := make(map[int32][]T, len(heightObjects))
+		for _, object := range heightObjects {
+			priority := object.GetPriority()
+			byPriority[priority] = append(byPriority[priority], object)
 		}
 
-		resolvedObjects[objects[0].GetHeight()] = objects[0]
+		unique := make([]T, 0, len(byPriority))
+		overridden := make([]T, 0)
+		for _, bucket := range byPriority {
+			winner, extras, err := pickPriorityWinner(bucket)
+			if err != nil {
+				return nil, nil, err
+			}
+			unique = append(unique, winner)
+			overridden = append(overridden, extras...)
+		}
+
+		if len(unique) > 1 {
+			sort.Slice(unique, func(i, j int) bool {
+				return unique[i].GetPriority() > unique[j].GetPriority()
+			})
+			overridden = append(overridden, unique[1:]...)
+		}
+
+		resolvedObjects[height] = unique[0]
+		if len(overridden) > 0 {
+			overriddenObjects[height] = overridden
+		}
 	}
 
-	return resolvedObjects, overriddenObjects
+	return resolvedObjects, overriddenObjects, nil
 }
 
 // check for duplicate upgrades with the same height and priority
