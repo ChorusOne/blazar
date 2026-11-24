@@ -95,11 +95,7 @@ func (s *SlackNotifier) send(message string, opts []MsgOption) (string, error) {
 			BlockSet: []slack.Block{
 				slack.SectionBlock{
 					Type: "section",
-					Text: &slack.TextBlockObject{
-						Type:  "plain_text",
-						Text:  message,
-						Emoji: true,
-					},
+					Text: slack.NewTextBlockObject(slack.PlainTextType, message, true, false),
 				},
 				contextBlock,
 			},
