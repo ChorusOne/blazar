@@ -91,3 +91,15 @@ GHSA-r3r4-g7hq-pq4f:
   vulnerable_code: validation of block part and proof indices in types.Part and types.PartSet.AddPart, used by the consensus reactor
   justification: not_used
   reason: blazar uses cometbft/types only for EventDataNewBlock and runs no consensus reactor, no PartSet or AddPart reference exists in the code and govulncheck finds no call path; the fix needs cometbft 0.38, which needs cosmos-sdk 0.50
+
+GHSA-w5w5-2882-47pc:
+  status: ignored
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/1
+  packages: [github.com/cosmos/cosmos-sdk]
+  vulnerable_versions: "<= 0.50.0-alpha.1"
+  scope:
+    blazar: dependency
+  vulnerable_code: x/crisis MsgVerifyInvariant handler, which does not charge the ConstantFee
+  justification: not_used
+  reason: blazar imports no x/crisis package and runs no chain application, it only queries x/gov and x/upgrade over gRPC; no patched cosmos-sdk release exists
