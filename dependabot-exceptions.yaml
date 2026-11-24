@@ -79,3 +79,15 @@ GHSA-22qq-3xwm-r5x4:
   vulnerable_code: blocksync reactor handling of peer base and latest heights
   justification: not_used
   reason: blazar imports cometbft only for rpc/client/http, types, consensus/types, libs and proto, the blocksync package is not in the build; the fix needs cometbft 0.38, which needs cosmos-sdk 0.50
+
+GHSA-r3r4-g7hq-pq4f:
+  status: ignored
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/9
+  packages: [github.com/cometbft/cometbft]
+  vulnerable_versions: "< 0.38.17"
+  scope:
+    blazar: dependency
+  vulnerable_code: validation of block part and proof indices in types.Part and types.PartSet.AddPart, used by the consensus reactor
+  justification: not_used
+  reason: blazar uses cometbft/types only for EventDataNewBlock and runs no consensus reactor, no PartSet or AddPart reference exists in the code and govulncheck finds no call path; the fix needs cometbft 0.38, which needs cosmos-sdk 0.50
