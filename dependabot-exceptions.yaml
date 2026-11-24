@@ -1,0 +1,117 @@
+# Dependabot alerts left open on purpose. One entry per advisory.
+# ignored: the vulnerable code is not reached and the bump is not cheap. The reason
+#   states the condition that keeps us safe, so a later change can be checked against it.
+# blocked: the vulnerable code is reached and the bump is not possible yet. The reason
+#   states the blocker, so a later run knows what to check before retrying.
+GHSA-pxq6-2prw-chj9:
+  status: ignored
+  cve: CVE-2026-33997
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/20
+  packages: [github.com/docker/docker]
+  vulnerable_versions: "< 29.3.1"
+  scope:
+    blazar: dependency
+  vulnerable_code: plugin privilege comparison in the Docker daemon during docker plugin install
+  justification: not_used
+  reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon or plugin package is in the build, and no patched github.com/docker/docker release exists
+
+GHSA-x86f-5xw2-fm2r:
+  status: ignored
+  cve: CVE-2026-41567
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/24
+  packages: [github.com/docker/docker]
+  vulnerable_versions: "<= 28.5.2"
+  scope:
+    blazar: dependency
+  vulnerable_code: daemon handler of PUT /containers/{id}/archive, which runs decompression binaries from the container filesystem
+  justification: not_used
+  reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon package is in the build, and the client never calls CopyToContainer
+
+GHSA-vp62-88p7-qqf5:
+  status: ignored
+  cve: CVE-2026-41568
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/25
+  packages: [github.com/docker/docker]
+  vulnerable_versions: "<= 28.5.2"
+  scope:
+    blazar: dependency
+  vulnerable_code: daemon mountpoint creation during docker cp
+  justification: not_used
+  reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon package is in the build, and the client never calls CopyToContainer or CopyFromContainer
+
+GHSA-rg2x-37c3-w2rh:
+  status: ignored
+  cve: CVE-2026-42306
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/26
+  packages: [github.com/docker/docker]
+  vulnerable_versions: "<= 28.5.2"
+  scope:
+    blazar: dependency
+  vulnerable_code: daemon bind mount setup during docker cp
+  justification: not_used
+  reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon package is in the build, and the client never calls CopyToContainer or CopyFromContainer
+
+GHSA-555p-m4v6-cqxv:
+  status: ignored
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/2
+  packages: [github.com/cometbft/cometbft]
+  vulnerable_versions: "<= 0.38.5"
+  scope:
+    blazar: dependency
+  vulnerable_code: default EvidenceParams.MaxAgeNumBlocks and MaxAgeDuration consensus parameters of a chain
+  justification: not_used
+  reason: blazar is an RPC client of a node and never creates a genesis or consensus parameters, no ConsensusParams or EvidenceParams reference exists in the code
+
+GHSA-22qq-3xwm-r5x4:
+  status: ignored
+  cve: CVE-2025-24371
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/8
+  packages: [github.com/cometbft/cometbft]
+  vulnerable_versions: "< 0.38.17"
+  scope:
+    blazar: dependency
+  vulnerable_code: blocksync reactor handling of peer base and latest heights
+  justification: not_used
+  reason: blazar imports cometbft only for rpc/client/http, types, consensus/types, libs and proto, the blocksync package is not in the build; the fix needs cometbft 0.38, which needs cosmos-sdk 0.50
+
+GHSA-r3r4-g7hq-pq4f:
+  status: ignored
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/9
+  packages: [github.com/cometbft/cometbft]
+  vulnerable_versions: "< 0.38.17"
+  scope:
+    blazar: dependency
+  vulnerable_code: validation of block part and proof indices in types.Part and types.PartSet.AddPart, used by the consensus reactor
+  justification: not_used
+  reason: blazar uses cometbft/types only for EventDataNewBlock and runs no consensus reactor, no PartSet or AddPart reference exists in the code and govulncheck finds no call path; the fix needs cometbft 0.38, which needs cosmos-sdk 0.50
+
+GHSA-w5w5-2882-47pc:
+  status: ignored
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/1
+  packages: [github.com/cosmos/cosmos-sdk]
+  vulnerable_versions: "<= 0.50.0-alpha.1"
+  scope:
+    blazar: dependency
+  vulnerable_code: x/crisis MsgVerifyInvariant handler, which does not charge the ConstantFee
+  justification: not_used
+  reason: blazar imports no x/crisis package and runs no chain application, it only queries x/gov and x/upgrade over gRPC; no patched cosmos-sdk release exists
+
+GHSA-p22h-3m2v-cmgh:
+  status: ignored
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/12
+  packages: [github.com/cosmos/cosmos-sdk]
+  vulnerable_versions: "< 0.50.14"
+  scope:
+    blazar: dependency
+  vulnerable_code: integer overflow in the x/distribution validator rewards pool
+  justification: not_used
+  reason: blazar imports no x/distribution package and runs no chain application; cosmos-sdk 0.50.14 removes client/grpc/tmservice and moves x/upgrade/types, so the bump needs a code migration
