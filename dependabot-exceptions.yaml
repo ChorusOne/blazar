@@ -15,3 +15,16 @@ GHSA-pxq6-2prw-chj9:
   vulnerable_code: plugin privilege comparison in the Docker daemon during docker plugin install
   justification: not_used
   reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon or plugin package is in the build, and no patched github.com/docker/docker release exists
+
+GHSA-x86f-5xw2-fm2r:
+  status: ignored
+  cve: CVE-2026-41567
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/24
+  packages: [github.com/docker/docker]
+  vulnerable_versions: "<= 28.5.2"
+  scope:
+    blazar: dependency
+  vulnerable_code: daemon handler of PUT /containers/{id}/archive, which runs decompression binaries from the container filesystem
+  justification: not_used
+  reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon package is in the build, and the client never calls CopyToContainer
