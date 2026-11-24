@@ -28,3 +28,16 @@ GHSA-x86f-5xw2-fm2r:
   vulnerable_code: daemon handler of PUT /containers/{id}/archive, which runs decompression binaries from the container filesystem
   justification: not_used
   reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon package is in the build, and the client never calls CopyToContainer
+
+GHSA-vp62-88p7-qqf5:
+  status: ignored
+  cve: CVE-2026-41568
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/25
+  packages: [github.com/docker/docker]
+  vulnerable_versions: "<= 28.5.2"
+  scope:
+    blazar: dependency
+  vulnerable_code: daemon mountpoint creation during docker cp
+  justification: not_used
+  reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon package is in the build, and the client never calls CopyToContainer or CopyFromContainer
