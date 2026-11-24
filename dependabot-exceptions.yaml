@@ -54,3 +54,15 @@ GHSA-rg2x-37c3-w2rh:
   vulnerable_code: daemon bind mount setup during docker cp
   justification: not_used
   reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon package is in the build, and the client never calls CopyToContainer or CopyFromContainer
+
+GHSA-555p-m4v6-cqxv:
+  status: ignored
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/2
+  packages: [github.com/cometbft/cometbft]
+  vulnerable_versions: "<= 0.38.5"
+  scope:
+    blazar: dependency
+  vulnerable_code: default EvidenceParams.MaxAgeNumBlocks and MaxAgeDuration consensus parameters of a chain
+  justification: not_used
+  reason: blazar is an RPC client of a node and never creates a genesis or consensus parameters, no ConsensusParams or EvidenceParams reference exists in the code
