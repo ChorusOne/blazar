@@ -1,0 +1,17 @@
+# Dependabot alerts left open on purpose. One entry per advisory.
+# ignored: the vulnerable code is not reached and the bump is not cheap. The reason
+#   states the condition that keeps us safe, so a later change can be checked against it.
+# blocked: the vulnerable code is reached and the bump is not possible yet. The reason
+#   states the blocker, so a later run knows what to check before retrying.
+GHSA-pxq6-2prw-chj9:
+  status: ignored
+  cve: CVE-2026-33997
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/20
+  packages: [github.com/docker/docker]
+  vulnerable_versions: "< 29.3.1"
+  scope:
+    blazar: dependency
+  vulnerable_code: plugin privilege comparison in the Docker daemon during docker plugin install
+  justification: not_used
+  reason: blazar imports only github.com/docker/docker/client and api/types packages, no daemon or plugin package is in the build, and no patched github.com/docker/docker release exists
