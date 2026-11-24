@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/cometbft/cometbft v0.37.18
 	github.com/compose-spec/compose-go/v2 v2.15.0
-	github.com/cosmos/cosmos-sdk v0.47.13
+	github.com/cosmos/cosmos-sdk v0.47.17
 	github.com/docker/docker v28.5.1+incompatible
 	github.com/docker/docker-credential-helpers v0.8.1
 	github.com/fsnotify/fsnotify v1.9.0
@@ -16,7 +16,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.5.8
 	github.com/otiai10/copy v1.12.0
 	github.com/prometheus/client_golang v1.20.5
-	github.com/rs/zerolog v1.32.0
+	github.com/rs/zerolog v1.33.0
 	github.com/slack-go/slack v0.14.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.12.1
