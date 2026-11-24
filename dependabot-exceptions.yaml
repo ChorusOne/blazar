@@ -103,3 +103,15 @@ GHSA-w5w5-2882-47pc:
   vulnerable_code: x/crisis MsgVerifyInvariant handler, which does not charge the ConstantFee
   justification: not_used
   reason: blazar imports no x/crisis package and runs no chain application, it only queries x/gov and x/upgrade over gRPC; no patched cosmos-sdk release exists
+
+GHSA-p22h-3m2v-cmgh:
+  status: ignored
+  alerts:
+    - https://github.com/ChorusOne/blazar/security/dependabot/12
+  packages: [github.com/cosmos/cosmos-sdk]
+  vulnerable_versions: "< 0.50.14"
+  scope:
+    blazar: dependency
+  vulnerable_code: integer overflow in the x/distribution validator rewards pool
+  justification: not_used
+  reason: blazar imports no x/distribution package and runs no chain application; cosmos-sdk 0.50.14 removes client/grpc/tmservice and moves x/upgrade/types, so the bump needs a code migration
