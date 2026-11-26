@@ -56,6 +56,7 @@ type Watchers struct {
 type Clients struct {
 	Host         string        `toml:"host"`
 	GrpcPort     uint16        `toml:"grpc-port"`
+	RestPort     uint16        `toml:"rest-port"`
 	CometbftPort uint16        `toml:"cometbft-port"`
 	Timeout      time.Duration `toml:"timeout"`
 }
@@ -359,8 +360,8 @@ func (cfg *Config) ValidateGrpcClient() error {
 		return errors.New("clients.host cannot be empty")
 	}
 
-	if cfg.Clients.GrpcPort == 0 {
-		return errors.New("clients.grpc-port cannot be 0")
+	if cfg.Clients.GrpcPort == 0 && cfg.Clients.RestPort == 0 {
+		return errors.New("clients.grpc-port or clients.rest-port must be nonzero")
 	}
 	return nil
 }

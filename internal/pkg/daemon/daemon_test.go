@@ -169,7 +169,7 @@ func startAndTestGovUpgrade(ctx context.Context, t *testing.T, daemon *Daemon, c
 	require.NoError(t, err)
 
 	// start cosmos client and wait for it to be ready
-	cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout)
+	cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout, cfg.Clients.RestPort)
 	require.NoError(t, err)
 
 	for range 20 {
@@ -440,7 +440,7 @@ func runChain(t *testing.T, metrics *metrics.Metrics, tempDir, serviceName strin
 
 	setUIDEnv(t)
 
-	cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout)
+	cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout, cfg.Clients.RestPort)
 	require.NoError(t, err)
 
 	prvdr := chain.NewProvider(cosmosClient, "test", 1)
