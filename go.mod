@@ -9,6 +9,7 @@ require (
 	github.com/cometbft/cometbft v0.37.5
 	github.com/compose-spec/compose-go/v2 v2.15.0
 	github.com/cosmos/cosmos-sdk v0.47.13
+	github.com/cosmos/gogoproto v1.4.11
 	github.com/docker/docker v28.5.1+incompatible
 	github.com/docker/docker-credential-helpers v0.8.1
 	github.com/fsnotify/fsnotify v1.9.0
@@ -64,7 +65,6 @@ require (
 	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
-	github.com/cosmos/gogoproto v1.4.11 // indirect
 	github.com/cosmos/iavl v0.20.1 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.4 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect

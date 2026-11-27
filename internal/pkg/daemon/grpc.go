@@ -174,7 +174,7 @@ func (s *Server) GetVersion(ctx context.Context, in *vrproto.GetVersionRequest) 
 }
 
 func (s *Server) GetLastestHeight(ctx context.Context, _ *blazarproto.GetLatestHeightRequest) (*blazarproto.GetLatestHeightResponse, error) {
-	cosmosClient, err := cosmos.NewClient(s.cfg.Clients.Host, s.cfg.Clients.GrpcPort, s.cfg.Clients.CometbftPort, s.cfg.Clients.Timeout)
+	cosmosClient, err := cosmos.NewClient(s.cfg.Clients.Host, s.cfg.Clients.GrpcPort, s.cfg.Clients.CometbftPort, s.cfg.Clients.Timeout, s.cfg.Clients.RestPort)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create cosmos client")
 	}
@@ -207,7 +207,7 @@ func (s *Server) ForceSync(ctx context.Context, _ *urproto.ForceSyncRequest) (*u
 }
 
 func (s *Server) forceUpdate(ctx context.Context) (int64, error) {
-	cosmosClient, err := cosmos.NewClient(s.cfg.Clients.Host, s.cfg.Clients.GrpcPort, s.cfg.Clients.CometbftPort, s.cfg.Clients.Timeout)
+	cosmosClient, err := cosmos.NewClient(s.cfg.Clients.Host, s.cfg.Clients.GrpcPort, s.cfg.Clients.CometbftPort, s.cfg.Clients.Timeout, s.cfg.Clients.RestPort)
 	if err != nil {
 		return 0, err
 	}

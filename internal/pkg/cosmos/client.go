@@ -27,9 +27,7 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 )
 
 const defaultPaginationLimit = query.DefaultLimit
@@ -44,6 +42,7 @@ type Client struct {
 	timeout           time.Duration
 	paginationLimit   uint64
 	callOptions       []grpc.CallOption
+	restURL           string
 }
 
 func NewCosmosGrpcOnlyClient(host string, grpcPort uint16, timeout time.Duration) (*Client, error) {
@@ -62,7 +61,7 @@ func NewCosmosGrpcOnlyClient(host string, grpcPort uint16, timeout time.Duration
 	}, nil
 }
 
-func NewClient(host string, grpcPort uint16, cometbftPort uint16, timeout time.Duration) (*Client, error) {
+func NewClient(host string, grpcPort uint16, cometbftPort uint16, timeout time.Duration, restPort uint16) (*Client, error) {
 	grpcConn, err := createGrpcConn(host, grpcPort)
 	if err != nil {
 		return nil, err
@@ -73,11 +72,17 @@ func NewClient(host string, grpcPort uint16, cometbftPort uint16, timeout time.D
 		return nil, errors.Wrapf(err, "failed to create cometbft http client")
 	}
 
+	restURL := ""
+	if restPort != 0 {
+		restURL = "http://" + net.JoinHostPort(host, strconv.Itoa(int(restPort)))
+	}
+
 	return &Client{
 		tmClient:        tmservice.NewServiceClient(grpcConn),
 		v1Client:        v1.NewQueryClient(grpcConn),
 		v1beta1Client:   v1beta1.NewQueryClient(grpcConn),
 		cometbftClient:  cometbftClient,
+		restURL:         restURL,
 		timeout:         timeout,
 		paginationLimit: defaultPaginationLimit,
 		// https://github.com/cosmos/cosmos-sdk/blob/a86c2a9980ffc4fed1f8c423889e0628193ffaab/server/config/config.go#L140
@@ -98,14 +103,13 @@ func (cc *Client) StartCometbftClient() error {
 }
 
 func (cc *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
-	var cancel context.CancelFunc
-
-	ctx, cancel = context.WithTimeout(ctx, cc.timeout)
-	defer cancel()
-
-	res, err := cc.tmClient.GetLatestBlock(ctx, &tmservice.GetLatestBlockRequest{}, cc.callOptions...)
+	grpcCtx, cancel := context.WithTimeout(ctx, cc.timeout)
+	res, err := cc.tmClient.GetLatestBlock(grpcCtx, &tmservice.GetLatestBlockRequest{}, cc.callOptions...)
+	cancel()
 	if err != nil {
-		status, err2 := cc.GetStatus(ctx)
+		statusCtx, cancel := context.WithTimeout(ctx, cc.timeout)
+		defer cancel()
+		status, err2 := cc.GetStatus(statusCtx)
 		if err2 != nil {
 			return 0, errors.Wrapf(err, "failed to get latest block & status")
 		}
@@ -133,8 +137,7 @@ func (cc *Client) GetLatestApplicationHeight(ctx context.Context) (int64, error)
 }
 
 func isUnregisteredProposalTypeError(err error) bool {
-	st, ok := status.FromError(err)
-	return ok && st.Code() == codes.Internal && strings.Contains(st.Message(), "no concrete type registered for type URL")
+	return err != nil && strings.Contains(err.Error(), "no concrete type registered for type URL")
 }
 
 func (cc *Client) GetProposalsV1(ctx context.Context) (v1.Proposals, error) {
@@ -142,16 +145,17 @@ func (cc *Client) GetProposalsV1(ctx context.Context) (v1.Proposals, error) {
 	proposals := make(v1.Proposals, 0, 50)
 
 	for {
-		pageCtx, cancel := context.WithTimeout(ctx, cc.timeout)
-		res, err := cc.v1Client.Proposals(pageCtx, &v1.QueryProposalsRequest{
-			Pagination: &query.PageRequest{
-				Key:     key,
-				Limit:   cc.paginationLimit,
-				Reverse: true,
-			},
-		}, cc.callOptions...)
-		cancel()
-		if len(proposals) > 0 && isUnregisteredProposalTypeError(err) {
+		pagination := &query.PageRequest{
+			Key:     key,
+			Limit:   cc.paginationLimit,
+			Reverse: true,
+		}
+		res, err := queryWithRESTFallback(ctx, cc, "/cosmos/gov/v1/proposals", pagination,
+			&v1.QueryProposalsResponse{}, func(ctx context.Context) (*v1.QueryProposalsResponse, error) {
+				return cc.v1Client.Proposals(ctx, &v1.QueryProposalsRequest{Pagination: pagination}, cc.callOptions...)
+			})
+		undecodable := isUnregisteredProposalTypeError(err)
+		if err != nil && len(proposals) > 0 && undecodable {
 			oldestID := proposals[len(proposals)-1].Id
 			log.FromContext(ctx).Warnf("The node failed to return proposals older than id %d, ignoring them: %v", oldestID, err)
 			break
@@ -161,7 +165,7 @@ func (cc *Client) GetProposalsV1(ctx context.Context) (v1.Proposals, error) {
 		}
 
 		proposals = append(proposals, res.Proposals...)
-		if key = res.Pagination.NextKey; key == nil {
+		if key = res.GetPagination().GetNextKey(); len(key) == 0 {
 			break
 		}
 	}
@@ -173,20 +177,20 @@ func (cc *Client) GetProposalsV1beta1(ctx context.Context) (v1beta1.Proposals, e
 	proposals := make(v1beta1.Proposals, 0, 50)
 
 	for {
-		pageCtx, cancel := context.WithTimeout(ctx, cc.timeout)
-		res, err := cc.v1beta1Client.Proposals(pageCtx, &v1beta1.QueryProposalsRequest{
-			Pagination: &query.PageRequest{
-				Key:   key,
-				Limit: cc.paginationLimit,
-			},
-		}, cc.callOptions...)
-		cancel()
+		pagination := &query.PageRequest{
+			Key:   key,
+			Limit: cc.paginationLimit,
+		}
+		res, err := queryWithRESTFallback(ctx, cc, "/cosmos/gov/v1beta1/proposals", pagination,
+			&v1beta1.QueryProposalsResponse{}, func(ctx context.Context) (*v1beta1.QueryProposalsResponse, error) {
+				return cc.v1beta1Client.Proposals(ctx, &v1beta1.QueryProposalsRequest{Pagination: pagination}, cc.callOptions...)
+			})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get proposals")
 		}
 
 		proposals = append(proposals, res.Proposals...)
-		if key = res.Pagination.NextKey; key == nil {
+		if key = res.GetPagination().GetNextKey(); len(key) == 0 {
 			break
 		}
 	}
@@ -257,7 +261,10 @@ func (cc *Client) GetStatus(ctx context.Context) (*StatusResponse, error) {
 }
 
 func (cc *Client) NodeInfo(ctx context.Context) (*tmservice.GetNodeInfoResponse, error) {
-	response, err := cc.tmClient.GetNodeInfo(ctx, &tmservice.GetNodeInfoRequest{}, cc.callOptions...)
+	response, err := queryWithRESTFallback(ctx, cc, "/cosmos/base/tendermint/v1beta1/node_info", nil,
+		&tmservice.GetNodeInfoResponse{}, func(ctx context.Context) (*tmservice.GetNodeInfoResponse, error) {
+			return cc.tmClient.GetNodeInfo(ctx, &tmservice.GetNodeInfoRequest{}, cc.callOptions...)
+		})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get node info")
 	}

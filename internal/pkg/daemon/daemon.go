@@ -85,7 +85,7 @@ func NewDaemon(ctx context.Context, cfg *config.Config, m *metrics.Metrics) (*Da
 	}
 
 	// setup new cosmos client
-	cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout)
+	cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout, cfg.Clients.RestPort)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create cosmos client")
 	}
@@ -145,7 +145,7 @@ func (d *Daemon) Init(ctx context.Context, cfg *config.Config) error {
 
 	// display information about the node
 	if cfg.Compose.EnvPrefix == "" {
-		logger.Infof("No EnvPrefix found in config, fetching NodeInfo from GRPC")
+		logger.Infof("No EnvPrefix found in config, fetching NodeInfo from the chain")
 		d.nodeInfo, err = d.cosmosClient.NodeInfo(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get node info")

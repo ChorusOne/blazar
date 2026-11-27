@@ -81,7 +81,7 @@ func NewUpgradesRegistryFromConfig(cfg *config.Config) (*UpgradeRegistry, error)
 	if cfg.UpgradeRegistry.Provider.Chain != nil && slices.Contains(
 		cfg.UpgradeRegistry.SelectedProviders, urproto.ProviderType_name[int32(urproto.ProviderType_CHAIN)],
 	) {
-		cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout)
+		cosmosClient, err := cosmos.NewClient(cfg.Clients.Host, cfg.Clients.GrpcPort, cfg.Clients.CometbftPort, cfg.Clients.Timeout, cfg.Clients.RestPort)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create cosmos client")
 		}

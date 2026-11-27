@@ -44,11 +44,15 @@ height-timeout = "20s"
 upgrade-proposals-interval = "10m"
 
 [clients]
-# Host of gRPC and CometBFT service exposed by the chain process
+# Host of gRPC, REST and CometBFT services exposed by the chain process
 host = "<host>"
 grpc-port = 9090
+# Optional Cosmos REST port on the host above. When nonzero, failed gRPC proposal
+# and node-info queries fall back to REST.
+# Required for chains disabling the Cosmos gRPC (like Sei v6.8+).
+# rest-port = 1317
 cometbft-port = 25567
-# Timeout value for gRPC method calls
+# Timeout per gRPC or REST attempt
 timeout = "10s"
 
 [compose-cli]
